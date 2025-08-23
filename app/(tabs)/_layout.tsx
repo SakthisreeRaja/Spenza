@@ -26,6 +26,8 @@ export default function TabLayout() {
           default: {},
         }),
       }}>
+      
+      {/* Login Page - Hidden from tabs */}
       <Tabs.Screen
         name="LoginPage"
         options={{
@@ -33,16 +35,59 @@ export default function TabLayout() {
           tabBarButton: () => null, // Hide this tab from the tab bar
         }}
       />
+
+      {/* Home Screen - Main tab */}
       <Tabs.Screen
-        name="TestScreen"
+        name="index"
         options={{
-          title: "Spenza",
+          title: "Home",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="star.fill" color={color} />
+            <IconSymbol size={28} name="house.fill" color={color} />
           ),
         }}
       />
 
+      {/* Expenses Screen */}
+      <Tabs.Screen
+        name="expenses"
+        options={{
+          title: "Expenses",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="creditcard.fill" color={color} />
+          ),
+        }}
+      />
+
+      {/* Budget Screen */}
+      <Tabs.Screen
+        name="budget"
+        options={{
+          title: "Budget",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="chart.pie.fill" color={color} />
+          ),
+        }}
+      />
+
+      {/* Profile Screen */}
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="person.fill" color={color} />
+          ),
+        }}
+      />
+
+      {/* Test Screen - Keep for now */}
+      <Tabs.Screen
+        name="TestScreen"
+        options={{
+          title: "Test",
+          tabBarButton: () => null, // Hide this tab from the tab bar
+        }}
+      />
 
     </Tabs>
   );

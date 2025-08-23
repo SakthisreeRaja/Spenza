@@ -1,7 +1,9 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { authAPI, handleApiError } from "../../services/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,9 +40,13 @@ export default function LoginPage() {
 
   // Validation functions
   const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email) return "Email is required";
-    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    if (!email) return isSignUp ? "Email is required" : "Email or username is required";
+    
+    if (isSignUp) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) return "Please enter a valid email address";
+    }
+    
     return "";
   };
 
@@ -78,7 +84,7 @@ export default function LoginPage() {
   };
 
   // Form submission
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const emailErr = validateEmail(email);
     const passwordErr = validatePassword(password);
     const usernameErr = isSignUp ? validateUsername(username) : "";
@@ -88,12 +94,46 @@ export default function LoginPage() {
     setUsernameError(usernameErr);
 
     if (!emailErr && !passwordErr && (!isSignUp || !usernameErr)) {
-      if (isSignUp) {
-        Alert.alert("Success", "Account created successfully!", [
-          { text: "OK", onPress: () => router.replace("/(tabs)") }
-        ]);
-      } else {
-        router.replace("/(tabs)");
+      try {
+        if (isSignUp) {
+          // Register new user
+          const response = await authAPI.register({
+            username,
+            email,
+            password,
+            firstName: "", // You can add firstName/lastName fields if needed
+            lastName: ""
+          });
+
+          if (response.status === 'success') {
+            // Save auth data
+            await AsyncStorage.setItem('authToken', response.data?.token || '');
+            await AsyncStorage.setItem('userData', JSON.stringify(response.data?.user || {}));
+            await AsyncStorage.setItem('hasLoggedIn', 'true');
+            
+            Alert.alert("Success", "Account created successfully!", [
+              { text: "OK", onPress: () => router.replace("/(tabs)") }
+            ]);
+          }
+        } else {
+          // Login existing user
+          const response = await authAPI.login({
+            emailOrUsername: email, // Using email field for email or username
+            password
+          });
+
+          if (response.status === 'success') {
+            // Save auth data
+            await AsyncStorage.setItem('authToken', response.data?.token || '');
+            await AsyncStorage.setItem('userData', JSON.stringify(response.data?.user || {}));
+            await AsyncStorage.setItem('hasLoggedIn', 'true');
+            
+            router.replace("/(tabs)");
+          }
+        }
+      } catch (error) {
+        const errorMessage = handleApiError(error);
+        Alert.alert("Error", errorMessage);
       }
     }
   };
@@ -286,11 +326,11 @@ export default function LoginPage() {
           <View style={styles.inputContainer}>
             <TextInput
               style={[styles.input, emailError ? styles.inputError : null]}
-              placeholder="Email"
+              placeholder={isSignUp ? "Email" : "Email or Username"}
               placeholderTextColor="#aaa"
               value={email}
               onChangeText={handleEmailChange}
-              keyboardType="email-address"
+              keyboardType={isSignUp ? "email-address" : "default"}
               autoCapitalize="none"
             />
             {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
