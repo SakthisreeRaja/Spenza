@@ -27,6 +27,13 @@ export default function TabLayout() {
         }),
       }}>
       <Tabs.Screen
+        name="LoginPage"
+        options={{
+          title: "Login",
+          tabBarButton: () => null, // Hide this tab from the tab bar
+        }}
+      />
+      <Tabs.Screen
         name="TestScreen"
         options={{
           title: "Spenza",

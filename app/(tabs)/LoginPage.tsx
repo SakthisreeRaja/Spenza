@@ -1,20 +1,109 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [isSignUp, setIsSignUp] = useState(false);
+  
+  // Form fields
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  
+  // Error states
+  const [usernameError, setUsernameError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-50)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  
+  // Bubble animation values
+  const bubble1X = useRef(new Animated.Value(0)).current;
+  const bubble1Y = useRef(new Animated.Value(0)).current;
+  const bubble1Rotate = useRef(new Animated.Value(0)).current;
+  const bubble2X = useRef(new Animated.Value(0)).current;
+  const bubble2Y = useRef(new Animated.Value(0)).current;
+  const bubble2Rotate = useRef(new Animated.Value(0)).current;
+  const bubble3X = useRef(new Animated.Value(0)).current;
+  const bubble3Y = useRef(new Animated.Value(0)).current;
+  const bubble3Rotate = useRef(new Animated.Value(0)).current;
+  const bubble4X = useRef(new Animated.Value(0)).current;
+  const bubble4Y = useRef(new Animated.Value(0)).current;
+  const bubble4Rotate = useRef(new Animated.Value(0)).current;
+
+  // Validation functions
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) return "Email is required";
+    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    return "";
+  };
+
+  const validatePassword = (password: string) => {
+    if (!password) return "Password is required";
+    if (password.length < 8) return "Password must be at least 8 characters";
+    if (!/(?=.*[a-zA-Z])/.test(password)) return "Password must contain letters";
+    if (!/(?=.*\d)/.test(password)) return "Password must contain numbers";
+    return "";
+  };
+
+  const validateUsername = (username: string) => {
+    if (!username) return "Username is required";
+    if (username.length < 3) return "Username must be at least 3 characters";
+    return "";
+  };
+
+  // Handle input changes without validation
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    // Clear error when user starts typing again
+    if (emailError) setEmailError("");
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    // Clear error when user starts typing again
+    if (passwordError) setPasswordError("");
+  };
+
+  const handleUsernameChange = (text: string) => {
+    setUsername(text);
+    // Clear error when user starts typing again
+    if (usernameError) setUsernameError("");
+  };
+
+  // Form submission
+  const handleSubmit = () => {
+    const emailErr = validateEmail(email);
+    const passwordErr = validatePassword(password);
+    const usernameErr = isSignUp ? validateUsername(username) : "";
+
+    setEmailError(emailErr);
+    setPasswordError(passwordErr);
+    setUsernameError(usernameErr);
+
+    if (!emailErr && !passwordErr && (!isSignUp || !usernameErr)) {
+      if (isSignUp) {
+        Alert.alert("Success", "Account created successfully!", [
+          { text: "OK", onPress: () => router.replace("/(tabs)") }
+        ]);
+      } else {
+        router.replace("/(tabs)");
+      }
+    }
+  };
+
+  const handleForgotPassword = () => {
+    Alert.alert("Forgot Password", "Password reset link will be sent to your email.");
+  };
 
   useEffect(() => {
-    // Start animations when component mounts
+    // Start logo animations when component mounts
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -33,38 +122,71 @@ export default function LoginPage() {
       }),
     ]).start();
 
-    // Continuous rotation animation
-    Animated.loop(
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 3000,
-        useNativeDriver: true,
-      })
-    ).start();
+    // Enhanced random movement animations for bubbles (slower)
+    const createContinuousMovement = () => {
+      const moveToNewPosition = (animX: Animated.Value, animY: Animated.Value, animRotate: Animated.Value, duration: number) => {
+        const randomX = (Math.random() - 0.5) * 80; // Reduced from 100 to 80
+        const randomY = (Math.random() - 0.5) * 80; // Reduced from 100 to 80
+        
+        Animated.parallel([
+          Animated.timing(animX, {
+            toValue: randomX,
+            duration: duration,
+            useNativeDriver: true,
+          }),
+          Animated.timing(animY, {
+            toValue: randomY,
+            duration: duration,
+            useNativeDriver: true,
+          }),
+          Animated.timing(animRotate, {
+            toValue: Math.random() * 360,
+            duration: duration * 2, // Slower rotation
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          // Immediately start new movement when current one finishes
+          moveToNewPosition(animX, animY, animRotate, duration + Math.random() * 2000); // Added more random delay
+        });
+      };
+
+      // Start movement for each bubble with slower, different timings
+      moveToNewPosition(bubble1X, bubble1Y, bubble1Rotate, 4000); // Increased from 2000
+      setTimeout(() => moveToNewPosition(bubble2X, bubble2Y, bubble2Rotate, 5000), 1000); // Increased from 2500
+      setTimeout(() => moveToNewPosition(bubble3X, bubble3Y, bubble3Rotate, 3500), 2000); // Increased from 1800
+      setTimeout(() => moveToNewPosition(bubble4X, bubble4Y, bubble4Rotate, 4500), 3000); // Increased from 2200
+    };
+
+    createContinuousMovement();
   }, []);
 
-  const rotateInterpolate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  function onLoginSuccess() {
-    // Here you can add validation or API check
-    if (email && password) {
-      router.replace("/(tabs)"); // Go to tabs after login
-    } else {
-      alert("Please enter email and password");
+  // Check if form is valid
+  // Check if form has required content (not validation)
+  const isFormValid = () => {
+    if (isSignUp) {
+      return username.trim() !== "" && email.trim() !== "" && password.trim() !== "";
     }
-  }
+    return email.trim() !== "" && password.trim() !== "";
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Animated Background Elements */}
+    <LinearGradient
+      colors={['#0F0F23', '#1A1A3A', '#0F0F23']} // Soft gradient background
+      style={styles.container}
+    >
+      {/* Animated Background Bubbles - Behind everything */}
       <Animated.View 
         style={[
           styles.backgroundCircle1,
           {
-            transform: [{ rotate: rotateInterpolate }]
+            transform: [
+              { translateX: bubble1X },
+              { translateY: bubble1Y },
+              { rotate: bubble1Rotate.interpolate({
+                inputRange: [0, 360],
+                outputRange: ['0deg', '360deg']
+              })}
+            ]
           }
         ]} 
       />
@@ -72,145 +194,339 @@ export default function LoginPage() {
         style={[
           styles.backgroundCircle2,
           {
-            transform: [{ rotate: rotateInterpolate }]
+            transform: [
+              { translateX: bubble2X },
+              { translateY: bubble2Y },
+              { rotate: bubble2Rotate.interpolate({
+                inputRange: [0, 360],
+                outputRange: ['0deg', '360deg']
+              })}
+            ]
+          }
+        ]} 
+      />
+      <Animated.View 
+        style={[
+          styles.backgroundCircle3,
+          {
+            transform: [
+              { translateX: bubble3X },
+              { translateY: bubble3Y },
+              { rotate: bubble3Rotate.interpolate({
+                inputRange: [0, 360],
+                outputRange: ['0deg', '360deg']
+              })}
+            ]
+          }
+        ]} 
+      />
+      <Animated.View 
+        style={[
+          styles.backgroundCircle4,
+          {
+            transform: [
+              { translateX: bubble4X },
+              { translateY: bubble4Y },
+              { rotate: bubble4Rotate.interpolate({
+                inputRange: [0, 360],
+                outputRange: ['0deg', '360deg']
+              })}
+            ]
           }
         ]} 
       />
 
-      {/* Animated Spenza Logo */}
-      <Animated.View
-        style={[
-          styles.logoContainer,
-          {
-            opacity: fadeAnim,
-            transform: [
-              { translateY: slideAnim },
-              { scale: scaleAnim }
-            ]
-          }
-        ]}
-      >
-        <Text style={styles.logo}>
-          <Text style={styles.logoS}>S</Text>
-          <Text style={styles.logoText}>penza</Text>
-        </Text>
-        <Text style={styles.tagline}>Your Smart Finance Partner</Text>
-      </Animated.View>
+      {/* Main Content - Above bubbles */}
+      <View style={styles.contentContainer}>
+        {/* Animated Spenza Logo */}
+        <Animated.View
+          style={[
+            styles.logoContainer,
+            {
+              opacity: fadeAnim,
+              transform: [
+                { translateY: slideAnim },
+                { scale: scaleAnim }
+              ]
+            }
+          ]}
+        >
+          <Text style={styles.logo}>
+            <Text style={styles.logoS}>S</Text>
+            <Text style={styles.logoText}>penza</Text>
+          </Text>
+          <Text style={styles.tagline}>Your Smart Finance Partner</Text>
+        </Animated.View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#aaa"
-        value={email}
-        onChangeText={setEmail}
-      />
+        {/* Professional Login/Signup Card */}
+        <View style={styles.formCard}>
+          <Text style={styles.formTitle}>
+            {isSignUp ? 'Create Account' : 'Welcome Back'}
+          </Text>
+          <Text style={styles.formSubtitle}>
+            {isSignUp ? 'Sign up to get started' : 'Sign in to your account'}
+          </Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#aaa"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+          {/* Username field (only for signup) */}
+          {isSignUp && (
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[styles.input, usernameError ? styles.inputError : null]}
+                placeholder="Username"
+                placeholderTextColor="#aaa"
+                value={username}
+                onChangeText={handleUsernameChange}
+                autoCapitalize="none"
+              />
+              {usernameError ? <Text style={styles.errorText}>{usernameError}</Text> : null}
+            </View>
+          )}
 
-      <TouchableOpacity style={styles.button} onPress={onLoginSuccess}>
-        <Text style={styles.buttonText}>Login</Text>
-      </TouchableOpacity>
-    </View>
+          {/* Email field */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={[styles.input, emailError ? styles.inputError : null]}
+              placeholder="Email"
+              placeholderTextColor="#aaa"
+              value={email}
+              onChangeText={handleEmailChange}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+          </View>
+
+          {/* Password field */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={[styles.input, passwordError ? styles.inputError : null]}
+              placeholder="Password"
+              placeholderTextColor="#aaa"
+              secureTextEntry
+              value={password}
+              onChangeText={handlePasswordChange}
+              autoCapitalize="none"
+            />
+            {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+          </View>
+
+          {/* Forgot Password Link (only for login) */}
+          {!isSignUp && (
+            <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotPassword}>
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Submit Button */}
+          <TouchableOpacity 
+            style={[styles.button, !isFormValid() ? styles.buttonDisabled : null]} 
+            onPress={handleSubmit}
+            disabled={!isFormValid()}
+          >
+            <Text style={styles.buttonText}>
+              {isSignUp ? 'Sign Up' : 'Login'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Toggle between Login/Signup */}
+          <View style={styles.toggleContainer}>
+            <Text style={styles.toggleText}>
+              {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+            </Text>
+            <TouchableOpacity onPress={() => {
+              setIsSignUp(!isSignUp);
+              // Clear errors when switching
+              setUsernameError("");
+              setEmailError("");
+              setPasswordError("");
+            }}>
+              <Text style={styles.toggleLink}>
+                {isSignUp ? 'Login' : 'Sign Up'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F0F23", // Deep dark blue background
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: 20,
-    overflow: 'hidden',
+    overflow: 'hidden', // Hide overflowing bubbles
   },
-  backgroundCircle1: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(255, 107, 107, 0.1)', // Semi-transparent red
-    top: -50,
-    right: -50,
-  },
-  backgroundCircle2: {
-    position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: 'rgba(255, 195, 0, 0.1)', // Semi-transparent yellow
-    bottom: -30,
-    left: -30,
+  contentContainer: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10, // Ensure content is above bubbles
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 50,
+    marginBottom: 40,
   },
   logo: {
     fontSize: 48,
-    fontWeight: "900",
-    marginBottom: 10,
+    fontWeight: 'bold',
     textAlign: 'center',
   },
   logoS: {
-    color: "#FF6B6B", // Bright red for 'S'
-    fontSize: 52,
+    color: '#FF6B6B', // Bright red for 'S'
+    fontSize: 56,
+    fontWeight: '900',
     textShadowColor: 'rgba(255, 107, 107, 0.5)',
     textShadowOffset: {width: 0, height: 0},
     textShadowRadius: 20,
   },
   logoText: {
-    color: "#FFFFFF", // White for 'penza'
+    color: '#FFFFFF',
     fontSize: 48,
+    fontWeight: '600',
     textShadowColor: 'rgba(255, 255, 255, 0.3)',
     textShadowOffset: {width: 0, height: 0},
     textShadowRadius: 10,
   },
   tagline: {
     fontSize: 16,
-    color: "#B0B0B0",
-    fontStyle: 'italic',
+    color: '#B0B0B0',
+    marginTop: 8,
     textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  formCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
+    padding: 30,
+    width: '100%',
+    maxWidth: 400,
+  },
+  formTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  formSubtitle: {
+    fontSize: 16,
+    color: '#A1A1AA',
+    textAlign: 'center',
+    marginBottom: 30,
+  },
+  inputContainer: {
+    width: '100%',
+    marginBottom: 20,
   },
   input: {
-    width: "100%",
-    height: 55,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 15,
-    paddingHorizontal: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
-    color: "#fff",
+    color: '#FFFFFF',
+    width: '100%',
+  },
+  inputError: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)', // Light red background for errors
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+    marginTop: 8,
+    paddingLeft: 4,
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
     marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  forgotPasswordText: {
+    color: '#FF6B6B',
+    fontSize: 14,
+    fontWeight: '500',
   },
   button: {
-    backgroundColor: "#FF6B6B", // Spenza brand color
-    width: "100%",
-    height: 55,
-    borderRadius: 15,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 20,
-    shadowColor: "#FF6B6B",
+    backgroundColor: '#FF6B6B',
+    borderRadius: 12,
+    padding: 16,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20,
+    shadowColor: '#FF6B6B',
     shadowOffset: {
       width: 0,
       height: 4,
     },
     shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  buttonDisabled: {
+    backgroundColor: '#6B7280',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-    letterSpacing: 1,
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toggleText: {
+    color: '#A1A1AA',
+    fontSize: 14,
+  },
+  toggleLink: {
+    color: '#FF6B6B',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // Background bubble styles
+  backgroundCircle1: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(255, 107, 107, 0.15)', // Semi-transparent red
+    top: 120,
+    right: -50,
+    zIndex: 1, // Behind content
+  },
+  backgroundCircle2: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255, 195, 0, 0.12)', // Semi-transparent yellow
+    bottom: 80,
+    left: -40,
+    zIndex: 1,
+  },
+  backgroundCircle3: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(138, 43, 226, 0.1)', // Semi-transparent purple
+    top: 300,
+    left: 50,
+    zIndex: 1,
+  },
+  backgroundCircle4: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(0, 191, 255, 0.12)', // Semi-transparent blue
+    bottom: 50,
+    right: -30,
+    zIndex: 1,
   },
 });
