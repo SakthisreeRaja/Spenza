@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, View } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -78,26 +78,19 @@ export default function SplashScreen() {
           duration: 700,
           useNativeDriver: true,
         }),
-        // 'S' moves WITH penza - synchronized movement with proper timing
+        // 'S' moves left ONLY when penza is arriving (delayed start)
         Animated.sequence([
-          Animated.delay(300), // Longer delay for S to wait for penza to arrive first
-          // First, S moves with penza's initial slide
-          Animated.timing(sLetterX, {
-            toValue: -28, // Moves further left with penza's overshoot (-20 + -8)
-            duration: 300, // Faster to catch up with penza
-            useNativeDriver: true,
-          }),
-          // Then S settles back with penza to final position
+          Animated.delay(300), // Reduced delay for faster response
           Animated.spring(sLetterX, {
-            toValue: -8, // Final position for S
-            tension: 120, // Same spring settings as penza
+            toValue: -8, // Reduced movement for less spacing
+            tension: 150, // Increased tension for faster movement
             friction: 8,
             useNativeDriver: true,
           }),
         ]),
-        // Quote appears when both letters settle into final position
+        // Quote appears RIGHT when penza hits (at 300ms into this step)
         Animated.sequence([
-          Animated.delay(600), // After initial movement completes
+          Animated.delay(300), // Same timing as when penza hits
           Animated.parallel([
             Animated.timing(taglineOpacity, {
               toValue: 1,
@@ -113,9 +106,39 @@ export default function SplashScreen() {
           ]),
         ]),
       ]),
+      
+      // Step 3: Final celebration wiggle (0.3 seconds)
+      Animated.parallel([
+        // Both letters do a small celebration wiggle
+        Animated.sequence([
+          Animated.timing(sLetterScale, {
+            toValue: 1.1,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+          Animated.timing(sLetterScale, {
+            toValue: 1,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+        ]),
+        // Penza also wiggles
+        Animated.sequence([
+          Animated.timing(penzaX, {
+            toValue: 5,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+          Animated.timing(penzaX, {
+            toValue: 0,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
     ]).start();
 
-    // Check auth status and navigate accordingly after animation (2.8 seconds total)
+    // Check auth status and navigate accordingly after animation (3.1 seconds total)
     const timer = setTimeout(async () => {
       try {
         const token = await AsyncStorage.getItem('authToken');
@@ -133,7 +156,7 @@ export default function SplashScreen() {
         // On error, go to login page
         router.replace('/(tabs)/LoginPage');
       }
-    }, 2800);
+    }, 3100);
 
     return () => clearTimeout(timer);
   }, []);

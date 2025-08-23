@@ -26,6 +26,10 @@ export default function LoginPage() {
   const slideAnim = useRef(new Animated.Value(-50)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   
+  // Bouncing animation for S letter and penza movement
+  const sBounceAnim = useRef(new Animated.Value(1)).current;
+  const penzaMoveAnim = useRef(new Animated.Value(0)).current;
+  
   // Bubble animation values
   const bubble1X = useRef(new Animated.Value(0)).current;
   const bubble1Y = useRef(new Animated.Value(0)).current;
@@ -208,6 +212,43 @@ export default function LoginPage() {
       }),
     ]).start();
 
+    // Start bouncing effect for S letter after 3 seconds (reduced for testing)
+    const bounceTimer = setTimeout(() => {
+      const createBounceEffect = () => {
+        // Simple single bounce - no parallel, just one at a time
+        Animated.sequence([
+          Animated.timing(sBounceAnim, {
+            toValue: 1.3,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(sBounceAnim, {
+            toValue: 1,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+        ]).start();
+
+        // Simple single move for penza
+        Animated.sequence([
+          Animated.timing(penzaMoveAnim, {
+            toValue: 10,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(penzaMoveAnim, {
+            toValue: 0,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          // Continue bouncing every 7 seconds
+          setTimeout(createBounceEffect, 7000);
+        });
+      };
+      createBounceEffect();
+    }, 3000); // Reduced from 5000 to 3000 for faster testing
+
     // Enhanced random movement animations for bubbles (slower)
     const createContinuousMovement = () => {
       const moveToNewPosition = (animX: Animated.Value, animY: Animated.Value, animRotate: Animated.Value, duration: number) => {
@@ -244,6 +285,11 @@ export default function LoginPage() {
     };
 
     createContinuousMovement();
+    
+    // Cleanup timers when component unmounts
+    return () => {
+      clearTimeout(bounceTimer);
+    };
   }, []);
 
   // Clear form fields when navigating back to login page (e.g., after logout)
@@ -352,11 +398,11 @@ export default function LoginPage() {
             }
           ]}
         >
-          <Text style={styles.logo}>
-            <Text style={styles.logoS}>S</Text>
-            <Text style={styles.logoText}>penza</Text>
-          </Text>
-          <Text style={styles.tagline}>Your Smart Finance Partner</Text>
+          <View style={styles.logoRow}>
+            <Animated.Text style={[styles.logoS, { transform: [{ scale: sBounceAnim }] }]}>S</Animated.Text>
+            <Animated.Text style={[styles.logoText, { transform: [{ translateX: penzaMoveAnim }] }]}>penza</Animated.Text>
+          </View>
+          <Text style={styles.tagline}>Your finances, simplified.</Text>
         </Animated.View>
 
         {/* Professional Login/Signup Card */}
@@ -492,6 +538,11 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     marginBottom: 40,
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logo: {
     fontSize: 48,
