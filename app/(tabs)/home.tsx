@@ -12,10 +12,34 @@ import {
     View,
 } from 'react-native';
 
+interface User {
+  username: string;
+  email: string;
+}
+
+interface Expense {
+  id: number;
+  description: string;
+  amount: number;
+  category: string;
+  date: string;
+}
+
+interface QuickActionCardProps {
+  title: string;
+  icon: string;
+  onPress: () => void;
+  color?: string;
+}
+
+interface ExpenseItemProps {
+  expense: Expense;
+}
+
 export default function HomePage() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [totalExpenses, setTotalExpenses] = useState(0);
-  const [recentExpenses, setRecentExpenses] = useState([]);
+  const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
 
   useEffect(() => {
     loadUserData();
@@ -50,7 +74,7 @@ export default function HomePage() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await AsyncStorage.multiRemove(['authToken', 'userData']);
+              await AsyncStorage.multiRemove(['authToken', 'userData', 'hasLoggedIn']);
               router.replace('/(tabs)/LoginPage');
             } catch (error) {
               console.error('Logout error:', error);
@@ -61,14 +85,14 @@ export default function HomePage() {
     );
   };
 
-  const QuickActionCard = ({ title, icon, onPress, color = '#FF6B6B' }) => (
+  const QuickActionCard = ({ title, icon, onPress, color = '#FF6B6B' }: QuickActionCardProps) => (
     <TouchableOpacity style={[styles.actionCard, { borderColor: color }]} onPress={onPress}>
       <Text style={[styles.actionIcon, { color }]}>{icon}</Text>
       <Text style={styles.actionTitle}>{title}</Text>
     </TouchableOpacity>
   );
 
-  const ExpenseItem = ({ expense }) => (
+  const ExpenseItem = ({ expense }: ExpenseItemProps) => (
     <View style={styles.expenseItem}>
       <View style={styles.expenseInfo}>
         <Text style={styles.expenseDescription}>{expense.description}</Text>

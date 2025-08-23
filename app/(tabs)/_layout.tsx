@@ -1,38 +1,84 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
-
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Tabs, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Platform, Text, View } from 'react-native';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  // Check authentication state only once when component mounts
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        const hasLoggedIn = await AsyncStorage.getItem('hasLoggedIn');
+        
+        console.log('🔍 Tab Layout - Checking auth:', { 
+          hasToken: !!token, 
+          hasLoggedIn: hasLoggedIn === 'true' 
+        });
+
+        if (token && hasLoggedIn === 'true') {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+          // Only redirect if we're not already on the login page
+          setTimeout(() => {
+            router.push('/(tabs)/LoginPage');
+          }, 100);
+        }
+      } catch (error) {
+        console.error('❌ Tab Layout - Auth check error:', error);
+        setIsAuthenticated(false);
+        setTimeout(() => {
+          router.push('/(tabs)/LoginPage');
+        }, 100);
+      }
+    };
+
+    checkAuthStatus();
+  }, []); // Empty dependency array - only run once on mount
+
+  // Show loading spinner while checking authentication
+  if (isAuthenticated === null) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0F0F23' }}>
+        <ActivityIndicator size="large" color="#FF6B6B" />
+        <Text style={{ color: '#FFFFFF', marginTop: 10 }}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: '#FF6B6B',
+        tabBarInactiveTintColor: '#8A8A8A',
         headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
+        tabBarStyle: {
+          backgroundColor: '#1A1A3A',
+          borderTopColor: 'rgba(255, 107, 107, 0.2)',
+          borderTopWidth: 1,
+          paddingBottom: Platform.OS === 'ios' ? 20 : 5,
+          paddingTop: 5,
+          height: Platform.OS === 'ios' ? 85 : 60,
+          // Hide tabs when not authenticated
+          display: isAuthenticated ? 'flex' : 'none',
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
       }}>
       
-      {/* Login Page - Hidden from tabs */}
+      {/* Login Page - Hidden from tabs but accessible */}
       <Tabs.Screen
         name="LoginPage"
         options={{
           title: "Login",
-          tabBarButton: () => null, // Hide this tab from the tab bar
+          tabBarButton: () => null, // Hide from tab bar but keep route accessible
+          tabBarStyle: { display: 'none' }, // Hide tab bar on this screen
         }}
       />
 
@@ -41,8 +87,8 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size || 24, color }}>🏠</Text>
           ),
         }}
       />
@@ -52,8 +98,8 @@ export default function TabLayout() {
         name="expenses"
         options={{
           title: "Expenses",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="creditcard.fill" color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size || 24, color }}>💳</Text>
           ),
         }}
       />
@@ -63,8 +109,8 @@ export default function TabLayout() {
         name="budget"
         options={{
           title: "Budget",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="chart.pie.fill" color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size || 24, color }}>📊</Text>
           ),
         }}
       />
@@ -74,18 +120,17 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="person.fill" color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size || 24, color }}>👤</Text>
           ),
         }}
       />
 
-      {/* Test Screen - Keep for now */}
+      {/* Test Screen - Completely hidden */}
       <Tabs.Screen
         name="TestScreen"
         options={{
-          title: "Test",
-          tabBarButton: () => null, // Hide this tab from the tab bar
+          href: null, // This completely removes it from the router
         }}
       />
 

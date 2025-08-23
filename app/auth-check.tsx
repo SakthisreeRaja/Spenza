@@ -20,17 +20,17 @@ export default function AuthCheck() {
       setTimeout(() => {
         if (hasLoggedIn && authToken) {
           // User has logged in before and has a token - go to home
-          router.replace('/(tabs)/home');
+          router.replace('/(tabs)' as any);
         } else {
-          // First time user or no token - go to login
-          router.replace('/(tabs)/login');
+          // First time user or no token - go to tabs (will redirect to login automatically)
+          router.replace('/(tabs)' as any);
         }
         setIsLoading(false);
       }, 1000);
     } catch (error) {
       console.error('Auth check error:', error);
-      // On error, go to login
-      router.replace('/(tabs)/login');
+      // On error, go to tabs
+      router.replace('/(tabs)' as any);
       setIsLoading(false);
     }
   };

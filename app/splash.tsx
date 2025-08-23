@@ -43,10 +43,10 @@ export default function SplashScreen() {
       ]),
     ]).start();
 
-    // Navigate to auth check after animation
+    // Navigate to tabs after animation (let tab layout handle auth)
     const timer = setTimeout(() => {
-      router.replace('/auth-check');
-    }, 2500);
+      router.replace('/(tabs)');
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, []);

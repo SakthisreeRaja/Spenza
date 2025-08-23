@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
-import { Alert, Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { authAPI, handleApiError } from "../../services/api";
 
 export default function LoginPage() {
@@ -13,11 +13,13 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   
   // Error states
   const [usernameError, setUsernameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -52,15 +54,26 @@ export default function LoginPage() {
 
   const validatePassword = (password: string) => {
     if (!password) return "Password is required";
-    if (password.length < 8) return "Password must be at least 8 characters";
-    if (!/(?=.*[a-zA-Z])/.test(password)) return "Password must contain letters";
-    if (!/(?=.*\d)/.test(password)) return "Password must contain numbers";
+    
+    // Only apply detailed validation for signup
+    if (isSignUp) {
+      if (password.length < 8) return "Password must be at least 8 characters";
+      if (!/(?=.*[a-zA-Z])/.test(password)) return "Password must contain letters";
+      if (!/(?=.*\d)/.test(password)) return "Password must contain numbers";
+    }
+    
     return "";
   };
 
   const validateUsername = (username: string) => {
     if (!username) return "Username is required";
     if (username.length < 3) return "Username must be at least 3 characters";
+    return "";
+  };
+
+  const validateConfirmPassword = (confirmPassword: string, password: string) => {
+    if (!confirmPassword && isSignUp) return "Please confirm your password";
+    if (confirmPassword !== password && isSignUp) return "Passwords do not match";
     return "";
   };
 
@@ -83,19 +96,34 @@ export default function LoginPage() {
     if (usernameError) setUsernameError("");
   };
 
+  const handleConfirmPasswordChange = (text: string) => {
+    setConfirmPassword(text);
+    // Clear error when user starts typing again
+    if (confirmPasswordError) setConfirmPasswordError("");
+  };
+
   // Form submission
   const handleSubmit = async () => {
     const emailErr = validateEmail(email);
     const passwordErr = validatePassword(password);
     const usernameErr = isSignUp ? validateUsername(username) : "";
+    const confirmPasswordErr = isSignUp ? validateConfirmPassword(password, confirmPassword) : "";
 
     setEmailError(emailErr);
     setPasswordError(passwordErr);
     setUsernameError(usernameErr);
+    setConfirmPasswordError(confirmPasswordErr);
 
-    if (!emailErr && !passwordErr && (!isSignUp || !usernameErr)) {
+    if (!emailErr && !passwordErr && (!isSignUp || (!usernameErr && !confirmPasswordErr))) {
+      // Clear any existing errors before making API call
+      setEmailError("");
+      setPasswordError("");
+      setUsernameError("");
+      setConfirmPasswordError("");
+      
       try {
         if (isSignUp) {
+          console.log('🔄 Starting registration process...');
           // Register new user
           const response = await authAPI.register({
             username,
@@ -105,41 +133,59 @@ export default function LoginPage() {
             lastName: ""
           });
 
+          console.log('📝 Registration response:', response);
+
           if (response.status === 'success') {
+            console.log('✅ Registration successful, saving auth data...');
             // Save auth data
             await AsyncStorage.setItem('authToken', response.data?.token || '');
             await AsyncStorage.setItem('userData', JSON.stringify(response.data?.user || {}));
             await AsyncStorage.setItem('hasLoggedIn', 'true');
             
-            Alert.alert("Success", "Account created successfully!", [
-              { text: "OK", onPress: () => router.replace("/(tabs)") }
-            ]);
+            console.log('🔄 Navigating to main app...');
+            // Navigate directly to main app after successful signup
+            router.replace("/(tabs)");
           }
         } else {
+          console.log('🔄 Starting login process...');
           // Login existing user
           const response = await authAPI.login({
             emailOrUsername: email, // Using email field for email or username
             password
           });
 
+          console.log('📝 Login response:', response);
+
           if (response.status === 'success') {
+            console.log('✅ Login successful, saving auth data...');
             // Save auth data
             await AsyncStorage.setItem('authToken', response.data?.token || '');
             await AsyncStorage.setItem('userData', JSON.stringify(response.data?.user || {}));
             await AsyncStorage.setItem('hasLoggedIn', 'true');
             
+            console.log('🔄 Navigating to main app...');
             router.replace("/(tabs)");
           }
+          // Note: Error responses are handled in the catch block
         }
       } catch (error) {
+        // Removed console.error to prevent "Auth error" message display
         const errorMessage = handleApiError(error);
-        Alert.alert("Error", errorMessage);
+        
+        // Show only custom error message for login failures, no auth system messages
+        if (!isSignUp && (errorMessage.includes('Invalid credentials') || errorMessage.includes('invalid') || errorMessage.includes('password') || errorMessage.includes('credential'))) {
+          setPasswordError("Invalid username/password");
+        } else {
+          // For other errors, log silently - no auth system messages
+          console.log('🔕 Auth error (silenced):', errorMessage);
+        }
       }
     }
   };
 
   const handleForgotPassword = () => {
-    Alert.alert("Forgot Password", "Password reset link will be sent to your email.");
+    console.log('🔕 Forgot password requested (feature not implemented)');
+    // Silent handling - no alert popup
   };
 
   useEffect(() => {
@@ -200,11 +246,26 @@ export default function LoginPage() {
     createContinuousMovement();
   }, []);
 
+  // Clear form fields when navigating back to login page (e.g., after logout)
+  useFocusEffect(
+    useCallback(() => {
+      // Clear all form fields and errors when the screen comes into focus
+      setUsername("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+      setUsernameError("");
+      setEmailError("");
+      setPasswordError("");
+      setConfirmPasswordError("");
+    }, [])
+  );
+
   // Check if form is valid
   // Check if form has required content (not validation)
   const isFormValid = () => {
     if (isSignUp) {
-      return username.trim() !== "" && email.trim() !== "" && password.trim() !== "";
+      return username.trim() !== "" && email.trim() !== "" && password.trim() !== "" && confirmPassword.trim() !== "";
     }
     return email.trim() !== "" && password.trim() !== "";
   };
@@ -350,6 +411,22 @@ export default function LoginPage() {
             {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
           </View>
 
+          {/* Confirm Password field (only for signup) */}
+          {isSignUp && (
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[styles.input, confirmPasswordError ? styles.inputError : null]}
+                placeholder="Confirm Password"
+                placeholderTextColor="#aaa"
+                secureTextEntry
+                value={confirmPassword}
+                onChangeText={handleConfirmPasswordChange}
+                autoCapitalize="none"
+              />
+              {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
+            </View>
+          )}
+
           {/* Forgot Password Link (only for login) */}
           {!isSignUp && (
             <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotPassword}>
@@ -379,10 +456,12 @@ export default function LoginPage() {
               setUsername("");
               setEmail("");
               setPassword("");
+              setConfirmPassword("");
               // Clear errors when switching
               setUsernameError("");
               setEmailError("");
               setPasswordError("");
+              setConfirmPasswordError("");
             }}>
               <Text style={styles.toggleLink}>
                 {isSignUp ? 'Login' : 'Sign Up'}

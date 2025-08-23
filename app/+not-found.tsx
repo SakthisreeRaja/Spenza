@@ -1,19 +1,26 @@
-import { Link, Stack } from 'expo-router';
-import { StyleSheet } from 'react-native';
-
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, Stack } from 'expo-router';
+import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 export default function NotFoundScreen() {
   return (
     <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
-      <ThemedView style={styles.container}>
-        <ThemedText type="title">This screen does not exist.</ThemedText>
-        <Link href="/" style={styles.link}>
-          <ThemedText type="link">Go to home screen!</ThemedText>
-        </Link>
-      </ThemedView>
+      <Stack.Screen options={{ headerShown: false }} />
+      <LinearGradient
+        colors={['#0F0F23', '#1A1A3A', '#0F0F23']}
+        style={styles.container}
+      >
+        <Text style={styles.emoji}>🔍</Text>
+        <Text style={styles.title}>Page Not Found</Text>
+        <Text style={styles.subtitle}>The page you're looking for doesn't exist.</Text>
+        
+        <TouchableOpacity 
+          style={styles.button}
+          onPress={() => router.replace('/(tabs)')}
+        >
+          <Text style={styles.buttonText}>Go to Home</Text>
+        </TouchableOpacity>
+      </LinearGradient>
     </>
   );
 }
@@ -25,8 +32,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
   },
-  link: {
-    marginTop: 15,
+  emoji: {
+    fontSize: 80,
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#B0B0B0',
+    textAlign: 'center',
+    marginBottom: 40,
+  },
+  button: {
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 30,
     paddingVertical: 15,
+    borderRadius: 25,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

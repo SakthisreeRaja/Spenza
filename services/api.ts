@@ -102,7 +102,7 @@ class ApiClient {
 
       return data;
     } catch (error) {
-      console.error('API request failed:', error);
+      // Removed console.error to prevent "API request failed" message display
       throw error;
     }
   }
