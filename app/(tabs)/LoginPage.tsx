@@ -335,6 +335,10 @@ export default function LoginPage() {
             </Text>
             <TouchableOpacity onPress={() => {
               setIsSignUp(!isSignUp);
+              // Clear all form fields when switching
+              setUsername("");
+              setEmail("");
+              setPassword("");
               // Clear errors when switching
               setUsernameError("");
               setEmailError("");
