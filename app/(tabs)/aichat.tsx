@@ -1,7 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     Alert,
+    Animated,
+    BackHandler,
     FlatList,
     KeyboardAvoidingView,
     Platform,
@@ -33,16 +38,59 @@ interface UserFinancialData {
 }
 
 export default function AIChatPage() {
+  const navigation = useNavigation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [userFinancialData, setUserFinancialData] = useState<UserFinancialData | null>(null);
   const flatListRef = useRef<FlatList>(null);
+  
+  // Animation for the S icon bounce (same as home screen)
+  const bounceAnim = useRef(new Animated.Value(1)).current;
+
+  // Handle navigation back with proper direction
+  const handleGoBack = () => {
+    (navigation as any).navigate('Home');
+  };
 
   useEffect(() => {
     loadUserFinancialData();
     addWelcomeMessage();
-  }, []);
+    
+    // Handle Android back button
+    const backAction = () => {
+      handleGoBack();
+      return true; // Prevent default behavior
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    
+    // Bounce animation every 7 seconds (same as home screen)
+    const bounceInterval = setInterval(() => {
+      Animated.sequence([
+        Animated.timing(bounceAnim, {
+          toValue: 1.3,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounceAnim, {
+          toValue: 0.9,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounceAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 7000);
+
+    return () => {
+      clearInterval(bounceInterval);
+      backHandler.remove();
+    };
+  }, [bounceAnim]);
 
   const loadUserFinancialData = async () => {
     try {
@@ -177,77 +225,88 @@ export default function AIChatPage() {
 
   return (
     <SafeAreaView style={styles.safeContainer} edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.aiIconContainer}>
-            <Text style={styles.aiIcon}>🤖</Text>
-          </View>
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>Spenza AI</Text>
-            <Text style={styles.headerSubtitle}>Your Financial Assistant</Text>
-          </View>
-        </View>
-        <TouchableOpacity style={styles.clearButton} onPress={clearChat}>
-          <Text style={styles.clearButtonText}>Clear</Text>
-        </TouchableOpacity>
-      </View>
-
-      <KeyboardAvoidingView 
-        style={styles.chatContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      <StatusBar style="light" backgroundColor="#0F0F23" />
+      <LinearGradient
+        colors={['#0F0F23', '#1A1A3A', '#0F0F23']}
+        style={styles.gradient}
       >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={({ item }) => <MessageItem message={item} />}
-          keyExtractor={(item) => item.id}
-          style={styles.messagesList}
-          contentContainerStyle={styles.messagesContent}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          showsVerticalScrollIndicator={false}
-        />
-
-        {isLoading && (
-          <View style={styles.loadingContainer}>
-            <View style={styles.typingIndicator}>
-              <Text style={styles.typingText}>AI is typing</Text>
-              <View style={styles.loadingDots}>
-                <View style={[styles.dot, styles.dot1]} />
-                <View style={[styles.dot, styles.dot2]} />
-                <View style={[styles.dot, styles.dot3]} />
-              </View>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <View style={styles.aiIconContainer}>
+              <Animated.Text style={[styles.aiIcon, { transform: [{ scale: bounceAnim }] }]}>
+                S
+              </Animated.Text>
+            </View>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.headerTitle}>Spenza AI</Text>
+              <Text style={styles.headerSubtitle}>Your Financial Assistant</Text>
             </View>
           </View>
-        )}
-
-        <View style={styles.inputContainer}>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.textInput}
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder="Ask me about your finances..."
-              placeholderTextColor="#8E8E93"
-              multiline
-              maxLength={500}
-              editable={!isLoading}
-            />
-            <TouchableOpacity
-              style={[
-                styles.sendButton,
-                (!inputText.trim() || isLoading) && styles.sendButtonDisabled
-              ]}
-              onPress={sendMessage}
-              disabled={!inputText.trim() || isLoading}
-            >
-              <Text style={styles.sendButtonText}>
-                {isLoading ? '⏳' : '➤'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.clearButton} onPress={clearChat}>
+            <Text style={styles.clearButtonText}>Clear</Text>
+          </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+
+        <KeyboardAvoidingView 
+          style={styles.chatContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={({ item }) => <MessageItem message={item} />}
+            keyExtractor={(item) => item.id}
+            style={styles.messagesList}
+            contentContainerStyle={styles.messagesContent}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            showsVerticalScrollIndicator={false}
+          />
+
+          {isLoading && (
+            <View style={styles.loadingContainer}>
+              <View style={styles.typingIndicator}>
+                <Text style={styles.typingText}>AI is typing</Text>
+                <View style={styles.loadingDots}>
+                  <View style={[styles.dot, styles.dot1]} />
+                  <View style={[styles.dot, styles.dot2]} />
+                  <View style={[styles.dot, styles.dot3]} />
+                </View>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.inputContainer}>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.textInput}
+                value={inputText}
+                onChangeText={setInputText}
+                placeholder="Ask me about your finances..."
+                placeholderTextColor="#8E8E93"
+                multiline
+                maxLength={500}
+                editable={!isLoading}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.sendButton,
+                  (!inputText.trim() || isLoading) && styles.sendButtonDisabled
+                ]}
+                onPress={sendMessage}
+                disabled={!inputText.trim() || isLoading}
+              >
+                <Text style={styles.sendButtonText}>
+                  {isLoading ? '⏳' : '➤'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </LinearGradient>
     </SafeAreaView>
   );
 }
@@ -255,26 +314,39 @@ export default function AIChatPage() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#0F0F23',
+  },
+  gradient: {
+    flex: 1,
   },
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
   header: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     paddingHorizontal: 20,
     paddingVertical: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  backButtonText: {
+    fontSize: 24,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: 44,
   },
   headerContent: {
     flexDirection: 'row',
@@ -285,13 +357,15 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#007AFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   aiIcon: {
-    fontSize: 20,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FF6B6B',
   },
   headerTextContainer: {
     flex: 1,
@@ -299,18 +373,18 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1C1C1E',
+    color: '#FFFFFF',
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: '#B0B0B0',
     marginTop: 2,
   },
   clearButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#FF6B6B',
   },
   clearButtonText: {
     color: '#FFFFFF',
@@ -341,18 +415,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
   userBubble: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#FF6B6B',
     borderBottomRightRadius: 6,
   },
   aiBubble: {
-    backgroundColor: '#E9E9EB',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderBottomLeftRadius: 6,
   },
   messageText: {
@@ -363,7 +432,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   aiText: {
-    color: '#1C1C1E',
+    color: '#FFFFFF',
   },
   timestamp: {
     fontSize: 12,
@@ -375,7 +444,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   aiTimestamp: {
-    color: '#8E8E93',
+    color: '#B0B0B0',
   },
   loadingContainer: {
     paddingHorizontal: 20,
@@ -384,7 +453,7 @@ const styles = StyleSheet.create({
   typingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E9E9EB',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 20,
@@ -394,7 +463,7 @@ const styles = StyleSheet.create({
   },
   typingText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: '#B0B0B0',
     marginRight: 8,
   },
   loadingDots: {
@@ -404,7 +473,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#8E8E93',
+    backgroundColor: '#B0B0B0',
     marginHorizontal: 1,
   },
   dot1: {
@@ -417,16 +486,16 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   inputContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5EA',
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 25,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -435,7 +504,7 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: 16,
-    color: '#1C1C1E',
+    color: '#FFFFFF',
     maxHeight: 100,
     marginRight: 8,
     paddingTop: 8,
@@ -445,19 +514,12 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#FF6B6B',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
   },
   sendButtonDisabled: {
-    backgroundColor: '#C7C7CC',
-    shadowOpacity: 0,
-    elevation: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   sendButtonText: {
     fontSize: 18,

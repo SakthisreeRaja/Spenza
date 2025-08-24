@@ -60,11 +60,30 @@ export default function MainNavigator() {
       initialRouteName={isAuthenticated ? "Home" : "Login"}
     >
       {/* Authentication Screens */}
-      <Stack.Screen name="Login" component={LoginPage} />
+      <Stack.Screen 
+        name="Login" 
+        component={LoginPage}
+        options={{
+          animation: 'fade',
+        }}
+      />
       
       {/* Main App Screens */}
-      <Stack.Screen name="Home" component={HomePage} />
-      <Stack.Screen name="AIChat" component={AIChatPage} />
+      <Stack.Screen 
+        name="Home" 
+        component={HomePage}
+        options={{
+          animation: 'slide_from_left',
+        }}
+      />
+      <Stack.Screen 
+        name="AIChat" 
+        component={AIChatPage}
+        options={{
+          animation: 'slide_from_right',
+          animationDuration: 300,
+        }}
+      />
     </Stack.Navigator>
   );
 }
