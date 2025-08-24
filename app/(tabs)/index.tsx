@@ -29,10 +29,48 @@ export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     loadUserData();
+    
+    // Update time every minute
+    const timeInterval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+
+    return () => clearInterval(timeInterval);
   }, []);
+
+  const getTimeBasedGreeting = () => {
+    const hour = currentTime.getHours();
+    
+    if (hour >= 5 && hour < 12) {
+      return {
+        greeting: "Good Morning",
+        icon: "🌅",
+        color: "#FFB347" // Orange
+      };
+    } else if (hour >= 12 && hour < 17) {
+      return {
+        greeting: "Good Afternoon",
+        icon: "☀️",
+        color: "#FFC107" // Yellow
+      };
+    } else if (hour >= 17 && hour < 22) {
+      return {
+        greeting: "Good Evening",
+        icon: "🌆",
+        color: "#FF7043" // Orange-red
+      };
+    } else {
+      return {
+        greeting: "Good Night",
+        icon: "🌙",
+        color: "#9C27B0" // Purple
+      };
+    }
+  };
 
   const loadUserData = async () => {
     try {
@@ -40,12 +78,14 @@ export default function HomePage() {
       if (userData) {
         setUser(JSON.parse(userData));
       }
-      // Load sample data for now
+      // Load sample data for now with better categorization
       setTotalExpenses(1250.50);
       setRecentExpenses([
-        { id: 1, description: 'Groceries', amount: 45.50, category: 'Food', date: 'Today' },
-        { id: 2, description: 'Gas', amount: 60.00, category: 'Transport', date: 'Yesterday' },
-        { id: 3, description: 'Coffee', amount: 5.25, category: 'Food', date: 'Yesterday' },
+        { id: 1, description: 'Groceries at Walmart', amount: 45.50, category: 'Food', date: 'Today' },
+        { id: 2, description: 'Gas Station Fill-up', amount: 60.00, category: 'Transport', date: 'Yesterday' },
+        { id: 3, description: 'Starbucks Coffee', amount: 5.25, category: 'Food', date: 'Yesterday' },
+        { id: 4, description: 'Netflix Subscription', amount: 15.99, category: 'Entertainment', date: '2 days ago' },
+        { id: 5, description: 'Uber Ride', amount: 12.75, category: 'Transport', date: '3 days ago' },
       ]);
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -86,11 +126,29 @@ export default function HomePage() {
     </TouchableOpacity>
   );
 
+  const getCategoryIcon = (category: string) => {
+    switch (category.toLowerCase()) {
+      case 'food': return '🍽️';
+      case 'transport': return '🚗';
+      case 'entertainment': return '🎬';
+      case 'shopping': return '🛍️';
+      case 'bills': return '📄';
+      case 'health': return '⚕️';
+      case 'education': return '📚';
+      default: return '💰';
+    }
+  };
+
   const ExpenseItem = ({ expense }: { expense: Expense }) => (
     <View style={styles.expenseItem}>
-      <View style={styles.expenseInfo}>
-        <Text style={styles.expenseDescription}>{expense.description}</Text>
-        <Text style={styles.expenseCategory}>{expense.category} • {expense.date}</Text>
+      <View style={styles.expenseLeft}>
+        <View style={styles.expenseIconContainer}>
+          <Text style={styles.expenseIcon}>{getCategoryIcon(expense.category)}</Text>
+        </View>
+        <View style={styles.expenseInfo}>
+          <Text style={styles.expenseDescription}>{expense.description}</Text>
+          <Text style={styles.expenseCategory}>{expense.category} • {expense.date}</Text>
+        </View>
       </View>
       <Text style={styles.expenseAmount}>-₹{expense.amount}</Text>
     </View>
@@ -105,27 +163,56 @@ export default function HomePage() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <View>
-              <Text style={styles.greeting}>Good Morning!</Text>
+            <View style={styles.greetingContainer}>
+              <Text style={[styles.greeting, { color: getTimeBasedGreeting().color }]}>
+                {getTimeBasedGreeting().greeting}!
+              </Text>
               <Text style={styles.userName}>{user?.username || 'User'}</Text>
+              <Text style={styles.currentTime}>
+                {currentTime.toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </Text>
             </View>
             <TouchableOpacity style={styles.profileButton} onPress={handleLogout}>
               <Text style={styles.profileIcon}>👤</Text>
+              <View style={styles.profileDot} />
             </TouchableOpacity>
           </View>
 
-          {/* Balance Card */}
+          {/* Enhanced Balance Card */}
           <View style={styles.balanceCard}>
-            <Text style={styles.balanceLabel}>Total Expenses This Month</Text>
+            <View style={styles.balanceHeader}>
+              <Text style={styles.balanceLabel}>Total Expenses This Month</Text>
+              <Text style={styles.balanceIcon}>💰</Text>
+            </View>
             <Text style={styles.balanceAmount}>₹{totalExpenses.toFixed(2)}</Text>
+            <View style={styles.balanceStats}>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>23</Text>
+                <Text style={styles.statLabel}>Transactions</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>₹41.85</Text>
+                <Text style={styles.statLabel}>Avg per day</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>8%</Text>
+                <Text style={styles.statLabel}>vs last month</Text>
+              </View>
+            </View>
             <View style={styles.balanceActions}>
               <TouchableOpacity style={styles.balanceButton}>
-                <Text style={styles.balanceButtonText}>View Details</Text>
+                <Text style={styles.balanceButtonText}>📊 View Details</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Quick Actions */}
+          {/* Enhanced Quick Actions */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
             <View style={styles.actionGrid}>
@@ -143,7 +230,7 @@ export default function HomePage() {
               />
               <QuickActionCard
                 title="Categories"
-                icon="📁"
+                icon="🏷️"
                 color="#45B7D1"
                 onPress={() => Alert.alert('Coming Soon', 'Categories feature coming soon!')}
               />
@@ -190,19 +277,37 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 20,
+    alignItems: 'flex-start',
+    marginTop: 60,
     marginBottom: 30,
   },
+  greetingContainer: {
+    flex: 1,
+  },
+  greetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  greetingIcon: {
+    fontSize: 24,
+    marginRight: 8,
+  },
   greeting: {
-    fontSize: 16,
-    color: '#B0B0B0',
+    fontSize: 32,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   userName: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginTop: 4,
+    marginBottom: 4,
+  },
+  currentTime: {
+    fontSize: 14,
+    color: '#B0B0B0',
+    fontStyle: 'italic',
   },
   profileButton: {
     width: 50,
@@ -211,9 +316,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
   profileIcon: {
     fontSize: 24,
+  },
+  profileDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#4CAF50',
+    borderWidth: 2,
+    borderColor: '#0F0F23',
   },
   balanceCard: {
     backgroundColor: 'rgba(255, 107, 107, 0.1)',
@@ -223,16 +340,56 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 107, 107, 0.2)',
   },
+  balanceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  balanceIcon: {
+    fontSize: 24,
+  },
   balanceLabel: {
     fontSize: 14,
     color: '#B0B0B0',
-    marginBottom: 8,
+    flex: 1,
   },
   balanceAmount: {
     fontSize: 36,
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginBottom: 20,
+  },
+  balanceStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingVertical: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#B0B0B0',
+    textAlign: 'center',
+  },
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginHorizontal: 8,
   },
   balanceActions: {
     flexDirection: 'row',
@@ -303,6 +460,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  expenseLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  expenseIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  expenseIcon: {
+    fontSize: 18,
   },
   expenseInfo: {
     flex: 1,
