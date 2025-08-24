@@ -1,27 +1,26 @@
+import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, Stack } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 export default function NotFoundScreen() {
+  const navigation = useNavigation();
+  
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient
-        colors={['#0F0F23', '#1A1A3A', '#0F0F23']}
-        style={styles.container}
+    <LinearGradient
+      colors={['#0F0F23', '#1A1A3A', '#0F0F23']}
+      style={styles.container}
+    >
+      <Text style={styles.emoji}>🔍</Text>
+      <Text style={styles.title}>Page Not Found</Text>
+      <Text style={styles.subtitle}>The page you're looking for doesn't exist.</Text>
+      
+      <TouchableOpacity 
+        style={styles.button}
+        onPress={() => navigation.navigate('Home' as never)}
       >
-        <Text style={styles.emoji}>🔍</Text>
-        <Text style={styles.title}>Page Not Found</Text>
-        <Text style={styles.subtitle}>The page you're looking for doesn't exist.</Text>
-        
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={() => router.replace('/(tabs)')}
-        >
-          <Text style={styles.buttonText}>Go to Home</Text>
-        </TouchableOpacity>
-      </LinearGradient>
-    </>
+        <Text style={styles.buttonText}>Go to Home</Text>
+      </TouchableOpacity>
+    </LinearGradient>
   );
 }
 

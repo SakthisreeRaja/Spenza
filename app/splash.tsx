@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, View } from 'react-native';
@@ -9,6 +9,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const { width, height } = Dimensions.get('window');
 
 export default function SplashScreen() {
+  const navigation = useNavigation();
+  
   // Animation values for the 'S' letter
   const sLetterY = useRef(new Animated.Value(100)).current; // Start below center
   const sLetterX = useRef(new Animated.Value(0)).current; // Will move left when penza arrives
@@ -157,7 +159,7 @@ export default function SplashScreen() {
                 const data = await response.json();
                 if (data.status === 'success') {
                   // Token is valid and user exists on server, go to main app
-                  router.replace('/(tabs)');
+                  navigation.navigate('Main' as never);
                   return;
                 }
               }
@@ -165,23 +167,23 @@ export default function SplashScreen() {
               // Token is invalid or user doesn't exist on server
               // Clear local storage and go to login
               await AsyncStorage.multiRemove(['authToken', 'hasLoggedIn', 'userData']);
-              router.replace('/(tabs)/LoginPage');
+              navigation.navigate('Main' as never);
             } catch (error) {
               console.error('Token validation error:', error);
               // Network error or server down, clear storage and go to login
               await AsyncStorage.multiRemove(['authToken', 'hasLoggedIn', 'userData']);
-              router.replace('/(tabs)/LoginPage');
+              navigation.navigate('Main' as never);
             }
           } else {
             // No token or hasn't logged in, go directly to login
-            router.replace('/(tabs)/LoginPage');
+            navigation.navigate('Main' as never);
           }
         });
       } catch (error) {
         console.error('Auth check error:', error);
         // On error, clear storage and go to login page
         await AsyncStorage.multiRemove(['authToken', 'hasLoggedIn', 'userData']);
-        router.replace('/(tabs)/LoginPage');
+        navigation.navigate('Main' as never);
       }
     }, 2800);
 

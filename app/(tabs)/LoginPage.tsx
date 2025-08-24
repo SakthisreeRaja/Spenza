@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect, useRouter } from "expo-router";
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
@@ -9,7 +9,7 @@ import LoadingScreen from "../../components/LoadingScreen";
 import { authAPI, handleApiError } from "../../services/api";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const navigation = useNavigation();
   const [isSignUp, setIsSignUp] = useState(false);
   
   // Loading states
@@ -181,7 +181,7 @@ export default function LoginPage() {
                 useNativeDriver: true,
               }).start(() => {
                 // Navigate directly to main app after successful signup
-                router.replace("/(tabs)");
+                navigation.navigate("Home" as never);
               });
             }, 1500);
           }
@@ -218,7 +218,7 @@ export default function LoginPage() {
                 duration: 200,
                 useNativeDriver: true,
               }).start(() => {
-                router.replace("/(tabs)");
+                navigation.navigate("Home" as never);
               });
             }, 1000);
           }

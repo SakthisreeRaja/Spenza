@@ -1,15 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -27,10 +28,16 @@ interface Expense {
 }
 
 export default function HomePage() {
+  const navigation = useNavigation();
   const [user, setUser] = useState<User | null>(null);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Animation for the S icon bounce
+  const bounceAnim = useRef(new Animated.Value(1)).current;
+  // Animation for the arrow movement (left-right-left)
+  const arrowMoveAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     loadUserData();
@@ -40,8 +47,58 @@ export default function HomePage() {
       setCurrentTime(new Date());
     }, 60000);
 
-    return () => clearInterval(timeInterval);
-  }, []);
+    // Bounce animation every 7 seconds
+    const bounceInterval = setInterval(() => {
+      // S bounce animation
+      Animated.sequence([
+        Animated.timing(bounceAnim, {
+          toValue: 1.3,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounceAnim, {
+          toValue: 0.9,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounceAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 7000);
+
+    // Arrow slide animation every 2 seconds (independent)
+    const arrowInterval = setInterval(() => {
+      Animated.sequence([
+        // Move right
+        Animated.timing(arrowMoveAnim, {
+          toValue: 8,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        // Move left
+        Animated.timing(arrowMoveAnim, {
+          toValue: -5,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        // Return to center
+        Animated.timing(arrowMoveAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 2000);
+
+    return () => {
+      clearInterval(timeInterval);
+      clearInterval(bounceInterval);
+      clearInterval(arrowInterval);
+    };
+  }, [bounceAnim, arrowMoveAnim]);
 
   const getTimeBasedGreeting = () => {
     const hour = currentTime.getHours();
@@ -105,7 +162,7 @@ export default function HomePage() {
           onPress: async () => {
             try {
               await AsyncStorage.multiRemove(['authToken', 'userData', 'hasLoggedIn']);
-              router.replace('/(tabs)/LoginPage');
+              navigation.navigate('LoginPage' as never);
             } catch (error) {
               console.error('Logout error:', error);
             }
@@ -212,6 +269,40 @@ export default function HomePage() {
                 <Text style={styles.balanceButtonText}>📊 View Details</Text>
               </TouchableOpacity>
             </View>
+          </View>
+
+          {/* Speak with Spenza */}
+          <View style={styles.section}>
+            <TouchableOpacity 
+              style={styles.spenzaChatButton}
+              onPress={() => navigation.navigate('AIChat' as never)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.spenzaHeader}>
+                <View style={styles.spenzaIcon}>
+                  <Animated.Text style={[styles.spenzaIconText, { transform: [{ scale: bounceAnim }] }]}>
+                    S
+                  </Animated.Text>
+                </View>
+                <View style={styles.spenzaContent}>
+                  <Text style={styles.spenzaTitle}>Speak with Spenza</Text>
+                  <Text style={styles.spenzaSubtitle}>Your Personal Finance Assistant</Text>
+                </View>
+                <Animated.Text style={[styles.spenzaArrow, { transform: [{ translateX: arrowMoveAnim }] }]}>
+                  →
+                </Animated.Text>
+              </View>
+              
+              <Text style={styles.spenzaDescription}>
+                Get smart financial advice and spending insights.
+              </Text>
+              
+              <View style={styles.spenzaFeatures}>
+                <Text style={styles.spenzaFeature}>💰 Expense Analysis</Text>
+                <Text style={styles.spenzaFeature}>📊 Budget Planning</Text>
+                <Text style={styles.spenzaFeature}>💡 Smart Tips</Text>
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Enhanced Quick Actions */}
@@ -501,5 +592,69 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FF6B6B',
     fontWeight: 'bold',
+  },
+  // Spenza Chat Button styles
+  spenzaChatButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  spenzaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  spenzaIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  spenzaIconText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FF6B6B',
+  },
+  spenzaContent: {
+    flex: 1,
+  },
+  spenzaTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  spenzaSubtitle: {
+    fontSize: 14,
+    color: '#4ECDC4',
+    fontWeight: '600',
+  },
+  spenzaArrow: {
+    fontSize: 20,
+    color: '#FF6B6B',
+    fontWeight: 'bold',
+  },
+  spenzaDescription: {
+    fontSize: 14,
+    color: '#B0B0B0',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  spenzaFeatures: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  spenzaFeature: {
+    fontSize: 12,
+    color: '#B0B0B0',
+    fontWeight: '500',
   },
 });
