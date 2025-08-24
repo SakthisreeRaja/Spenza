@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -30,6 +31,7 @@ interface Expense {
 export default function HomePage() {
   const navigation = useNavigation();
   const [user, setUser] = useState<User | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -41,6 +43,11 @@ export default function HomePage() {
 
   useEffect(() => {
     loadUserData();
+    
+    // Add focus listener to reload profile image when returning from profile screen
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadUserData();
+    });
     
     // Update time every minute
     const timeInterval = setInterval(() => {
@@ -94,11 +101,12 @@ export default function HomePage() {
     }, 2000);
 
     return () => {
+      unsubscribe();
       clearInterval(timeInterval);
       clearInterval(bounceInterval);
       clearInterval(arrowInterval);
     };
-  }, [bounceAnim, arrowMoveAnim]);
+  }, [bounceAnim, arrowMoveAnim, navigation]);
 
   const getTimeBasedGreeting = () => {
     const hour = currentTime.getHours();
@@ -133,9 +141,20 @@ export default function HomePage() {
   const loadUserData = async () => {
     try {
       const userData = await AsyncStorage.getItem('userData');
+      
       if (userData) {
-        setUser(JSON.parse(userData));
+        const user = JSON.parse(userData);
+        setUser(user);
+        
+        // Load profile image specific to this user
+        const userProfileKey = `profileImage_${user.email}`;
+        const savedProfileImage = await AsyncStorage.getItem(userProfileKey);
+        
+        if (savedProfileImage) {
+          setProfileImage(savedProfileImage);
+        }
       }
+      
       // Load sample data for now with better categorization
       setTotalExpenses(1250.50);
       setRecentExpenses([
@@ -235,8 +254,16 @@ export default function HomePage() {
                 })}
               </Text>
             </View>
-            <TouchableOpacity style={styles.profileButton} onPress={handleLogout}>
-              <Text style={styles.profileIcon}>👤</Text>
+            <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('Profile' as never)}>
+              {profileImage ? (
+                <Image source={{ uri: profileImage }} style={styles.profileImage} />
+              ) : (
+                <View style={styles.defaultProfileIcon}>
+                  <Text style={styles.profileIconText}>
+                    {user?.username?.charAt(0).toUpperCase() || 'U'}
+                  </Text>
+                </View>
+              )}
               <View style={styles.profileDot} />
             </TouchableOpacity>
           </View>
@@ -414,9 +441,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
+    borderWidth: 2,
+    borderColor: '#FF6B6B',
+    overflow: 'hidden',
+  },
+  profileImage: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    resizeMode: 'cover',
+  },
+  defaultProfileIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   profileIcon: {
     fontSize: 24,
+    color: '#FFFFFF',
+  },
+  profileIconText: {
+    fontSize: 20,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
   profileDot: {
     position: 'absolute',

@@ -4,9 +4,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
-import LoginPage from './LoginPage';
 import AIChatPage from './aichat';
 import HomePage from './index';
+import LoginPage from './LoginPage';
+import ProfilePage from './ProfilePage';
 
 const Stack = createNativeStackNavigator();
 
@@ -79,6 +80,14 @@ export default function MainNavigator() {
       <Stack.Screen 
         name="AIChat" 
         component={AIChatPage}
+        options={{
+          animation: 'slide_from_right',
+          animationDuration: 300,
+        }}
+      />
+      <Stack.Screen 
+        name="Profile" 
+        component={ProfilePage}
         options={{
           animation: 'slide_from_right',
           animationDuration: 300,
