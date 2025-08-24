@@ -118,19 +118,67 @@ export default function SplashScreen() {
     // Check auth status and navigate accordingly after animation (2.8 seconds total)
     const timer = setTimeout(async () => {
       try {
-        const token = await AsyncStorage.getItem('authToken');
-        const hasLoggedIn = await AsyncStorage.getItem('hasLoggedIn');
-        
-        if (token && hasLoggedIn === 'true') {
-          // User is authenticated, go to main app
-          router.replace('/(tabs)');
-        } else {
-          // User not authenticated, go directly to login
-          router.replace('/(tabs)/LoginPage');
-        }
+        // Complete fade out before navigation to prevent flash
+        Animated.parallel([
+          Animated.timing(sLetterOpacity, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(penzaOpacity, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(taglineOpacity, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start(async () => {
+          // Navigate after fade out completes
+          const token = await AsyncStorage.getItem('authToken');
+          const hasLoggedIn = await AsyncStorage.getItem('hasLoggedIn');
+          
+          if (token && hasLoggedIn === 'true') {
+            // Validate token with server
+            try {
+              const response = await fetch('http://10.77.221.151:3002/api/auth/validate', {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                if (data.status === 'success') {
+                  // Token is valid and user exists on server, go to main app
+                  router.replace('/(tabs)');
+                  return;
+                }
+              }
+              
+              // Token is invalid or user doesn't exist on server
+              // Clear local storage and go to login
+              await AsyncStorage.multiRemove(['authToken', 'hasLoggedIn', 'userData']);
+              router.replace('/(tabs)/LoginPage');
+            } catch (error) {
+              console.error('Token validation error:', error);
+              // Network error or server down, clear storage and go to login
+              await AsyncStorage.multiRemove(['authToken', 'hasLoggedIn', 'userData']);
+              router.replace('/(tabs)/LoginPage');
+            }
+          } else {
+            // No token or hasn't logged in, go directly to login
+            router.replace('/(tabs)/LoginPage');
+          }
+        });
       } catch (error) {
         console.error('Auth check error:', error);
-        // On error, go to login page
+        // On error, clear storage and go to login page
+        await AsyncStorage.multiRemove(['authToken', 'hasLoggedIn', 'userData']);
         router.replace('/(tabs)/LoginPage');
       }
     }, 2800);
@@ -139,10 +187,11 @@ export default function SplashScreen() {
   }, []);
 
   return (
-    <LinearGradient
-      colors={['#0F0F23', '#1A1A3A', '#0F0F23']}
-      style={styles.container}
-    >
+    <View style={{ flex: 1, backgroundColor: '#0F0F23' }}>
+      <LinearGradient
+        colors={['#0F0F23', '#1A1A3A', '#0F0F23']}
+        style={styles.container}
+      >
       {/* Animated Logo Container */}
       <View style={styles.logoContainer}>
         {/* Animated 'S' letter */}
@@ -195,6 +244,7 @@ export default function SplashScreen() {
       <View style={styles.backgroundCircle2} />
       <View style={styles.backgroundCircle3} />
     </LinearGradient>
+    </View>
   );
 }
 

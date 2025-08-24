@@ -125,6 +125,45 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
+// Token validation endpoint
+app.get('/api/auth/validate', authenticateToken, (req, res) => {
+  try {
+    // If we reach here, the token is valid (middleware passed)
+    // Find the user to make sure they still exist in our in-memory store
+    const user = users.find(u => u.id === req.user.userId);
+    if (!user) {
+      return res.status(404).json({ 
+        status: 'error',
+        message: 'User not found' 
+      });
+    }
+
+    res.json({
+      status: 'success',
+      message: 'Token is valid',
+      data: {
+        user: {
+          _id: user.id,
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          currency: 'USD',
+          isActive: true,
+          isEmailVerified: false,
+          createdAt: user.createdAt.toISOString(),
+          updatedAt: user.createdAt.toISOString()
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Server error', 
+      errors: [error.message] 
+    });
+  }
+});
+
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { emailOrUsername, password } = req.body;
@@ -134,7 +173,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (!user) {
       return res.status(400).json({ 
         status: 'error',
-        message: 'Invalid credentials' 
+        message: 'User not found' 
       });
     }
 
@@ -143,7 +182,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (!isValidPassword) {
       return res.status(400).json({ 
         status: 'error',
-        message: 'Invalid credentials' 
+        message: 'Invalid password' 
       });
     }
 

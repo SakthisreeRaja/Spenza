@@ -3,11 +3,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import LoadingScreen from "../../components/LoadingScreen";
 import { authAPI, handleApiError } from "../../services/api";
 
 export default function LoginPage() {
   const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
+  
+  // Loading states
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [loadingSubmessage, setLoadingSubmessage] = useState('');
   
   // Form fields
   const [username, setUsername] = useState("");
@@ -21,10 +27,15 @@ export default function LoginPage() {
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   
+  // Password visibility states
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-50)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const pageOpacity = useRef(new Animated.Value(0)).current; // For smooth page transition
   
   // Bouncing animation for S letter and penza movement
   const sBounceAnim = useRef(new Animated.Value(1)).current;
@@ -128,6 +139,12 @@ export default function LoginPage() {
       try {
         if (isSignUp) {
           console.log('🔄 Starting registration process...');
+          
+          // Show loading for signup process
+          setIsLoading(true);
+          setLoadingMessage('Creating your account...');
+          setLoadingSubmessage('');
+          
           // Register new user
           const response = await authAPI.register({
             username,
@@ -141,17 +158,39 @@ export default function LoginPage() {
 
           if (response.status === 'success') {
             console.log('✅ Registration successful, saving auth data...');
+            
+            // Show success message
+            setLoadingMessage('Sign up successful!');
+            setLoadingSubmessage('Logging you in...');
+            
             // Save auth data
             await AsyncStorage.setItem('authToken', response.data?.token || '');
             await AsyncStorage.setItem('userData', JSON.stringify(response.data?.user || {}));
             await AsyncStorage.setItem('hasLoggedIn', 'true');
             
-            console.log('🔄 Navigating to main app...');
-            // Navigate directly to main app after successful signup
-            router.replace("/(tabs)");
+            // Wait a moment to show success message
+            setTimeout(() => {
+              console.log('🔄 Navigating to main app...');
+              setIsLoading(false);
+              // Smooth fade out before navigation
+              Animated.timing(pageOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+              }).start(() => {
+                // Navigate directly to main app after successful signup
+                router.replace("/(tabs)");
+              });
+            }, 1500);
           }
         } else {
           console.log('🔄 Starting login process...');
+          
+          // Show loading for login process
+          setIsLoading(true);
+          setLoadingMessage('Logging in...');
+          setLoadingSubmessage('Please wait');
+          
           // Login existing user
           const response = await authAPI.login({
             emailOrUsername: email, // Using email field for email or username
@@ -167,21 +206,49 @@ export default function LoginPage() {
             await AsyncStorage.setItem('userData', JSON.stringify(response.data?.user || {}));
             await AsyncStorage.setItem('hasLoggedIn', 'true');
             
-            console.log('🔄 Navigating to main app...');
-            router.replace("/(tabs)");
+            // Wait a moment to show loading
+            setTimeout(() => {
+              console.log('🔄 Navigating to main app...');
+              setIsLoading(false);
+              // Smooth fade out before navigation
+              Animated.timing(pageOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+              }).start(() => {
+                router.replace("/(tabs)");
+              });
+            }, 1000);
           }
           // Note: Error responses are handled in the catch block
         }
       } catch (error) {
+        // Hide loading on error
+        setIsLoading(false);
+        
         // Removed console.error to prevent "Auth error" message display
         const errorMessage = handleApiError(error);
         
-        // Show only custom error message for login failures, no auth system messages
-        if (!isSignUp && (errorMessage.includes('Invalid credentials') || errorMessage.includes('invalid') || errorMessage.includes('password') || errorMessage.includes('credential'))) {
-          setPasswordError("Invalid username/password");
+        if (!isSignUp) {
+          // Handle different login error scenarios
+          if (errorMessage.includes('User not found') || errorMessage.includes('not found') || errorMessage.includes('No user found')) {
+            setEmailError("Account not found. Please sign up first or check your email/username.");
+          } else if (errorMessage.includes('Invalid password') || errorMessage.includes('password') || errorMessage.includes('incorrect')) {
+            setPasswordError("Incorrect password. Please try again.");
+          } else if (errorMessage.includes('Invalid credentials') || errorMessage.includes('invalid') || errorMessage.includes('credential')) {
+            setPasswordError("Invalid credentials. Please check your details.");
+          } else {
+            // For other login errors, show generic message
+            setPasswordError("Login failed. Please check your credentials.");
+          }
         } else {
-          // For other errors, log silently - no auth system messages
-          console.log('🔕 Auth error (silenced):', errorMessage);
+          // Handle signup errors
+          if (errorMessage.includes('already exists') || errorMessage.includes('already registered')) {
+            setEmailError("An account with this email already exists. Please login instead.");
+          } else {
+            // For other signup errors, log silently - no auth system messages
+            console.log('🔕 Signup error (silenced):', errorMessage);
+          }
         }
       }
     }
@@ -193,6 +260,13 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
+    // Start with page fade-in for smooth transition
+    Animated.timing(pageOpacity, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
     // Start logo animations when component mounts
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -212,42 +286,40 @@ export default function LoginPage() {
       }),
     ]).start();
 
-    // Start bouncing effect for S letter after 3 seconds (reduced for testing)
+    // Start bouncing effect for S letter after 3 seconds
     const bounceTimer = setTimeout(() => {
       const createBounceEffect = () => {
-        // Simple single bounce - no parallel, just one at a time
-        Animated.sequence([
-          Animated.timing(sBounceAnim, {
-            toValue: 1.3,
-            duration: 200,
-            useNativeDriver: true,
-          }),
+        // Single bounce - S scales up and down once
+        Animated.timing(sBounceAnim, {
+          toValue: 1.3,
+          duration: 250,
+          useNativeDriver: true,
+        }).start(() => {
           Animated.timing(sBounceAnim, {
             toValue: 1,
-            duration: 150,
+            duration: 250,
             useNativeDriver: true,
-          }),
-        ]).start();
+          }).start();
+        });
 
-        // Simple single move for penza
-        Animated.sequence([
-          Animated.timing(penzaMoveAnim, {
-            toValue: 10,
-            duration: 200,
-            useNativeDriver: true,
-          }),
+        // Single penza movement - moves right and back once
+        Animated.timing(penzaMoveAnim, {
+          toValue: 10,
+          duration: 250,
+          useNativeDriver: true,
+        }).start(() => {
           Animated.timing(penzaMoveAnim, {
             toValue: 0,
-            duration: 150,
+            duration: 250,
             useNativeDriver: true,
-          }),
-        ]).start(() => {
-          // Continue bouncing every 7 seconds
-          setTimeout(createBounceEffect, 7000);
+          }).start(() => {
+            // Wait 7 seconds before next bounce
+            setTimeout(createBounceEffect, 7000);
+          });
         });
       };
       createBounceEffect();
-    }, 3000); // Reduced from 5000 to 3000 for faster testing
+    }, 3000);
 
     // Enhanced random movement animations for bubbles (slower)
     const createContinuousMovement = () => {
@@ -304,6 +376,9 @@ export default function LoginPage() {
       setEmailError("");
       setPasswordError("");
       setConfirmPasswordError("");
+      // Reset password visibility when screen comes into focus
+      setShowPassword(false);
+      setShowConfirmPassword(false);
     }, [])
   );
 
@@ -317,10 +392,11 @@ export default function LoginPage() {
   };
 
   return (
-    <LinearGradient
-      colors={['#0F0F23', '#1A1A3A', '#0F0F23']} // Soft gradient background
-      style={styles.container}
-    >
+    <Animated.View style={[{ flex: 1 }, { opacity: pageOpacity }]}>
+      <LinearGradient
+        colors={['#0F0F23', '#1A1A3A', '#0F0F23']} // Soft gradient background
+        style={styles.container}
+      >
       {/* Animated Background Bubbles - Behind everything */}
       <Animated.View 
         style={[
@@ -424,6 +500,7 @@ export default function LoginPage() {
                 value={username}
                 onChangeText={handleUsernameChange}
                 autoCapitalize="none"
+                editable={!isLoading}
               />
               {usernameError ? <Text style={styles.errorText}>{usernameError}</Text> : null}
             </View>
@@ -439,55 +516,76 @@ export default function LoginPage() {
               onChangeText={handleEmailChange}
               keyboardType={isSignUp ? "email-address" : "default"}
               autoCapitalize="none"
+              editable={!isLoading}
             />
             {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
           </View>
 
           {/* Password field */}
           <View style={styles.inputContainer}>
-            <TextInput
-              style={[styles.input, passwordError ? styles.inputError : null]}
-              placeholder="Password"
-              placeholderTextColor="#aaa"
-              secureTextEntry
-              value={password}
-              onChangeText={handlePasswordChange}
-              autoCapitalize="none"
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={[styles.passwordInput, passwordError ? styles.inputError : null]}
+                placeholder="Password"
+                placeholderTextColor="#aaa"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={handlePasswordChange}
+                autoCapitalize="none"
+                editable={!isLoading}
+              />
+              <TouchableOpacity 
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword(!showPassword)}
+                disabled={isLoading}
+              >
+                <Text style={styles.eyeText}>{showPassword ? "HIDE" : "SHOW"}</Text>
+              </TouchableOpacity>
+            </View>
             {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
           </View>
 
           {/* Confirm Password field (only for signup) */}
           {isSignUp && (
             <View style={styles.inputContainer}>
-              <TextInput
-                style={[styles.input, confirmPasswordError ? styles.inputError : null]}
-                placeholder="Confirm Password"
-                placeholderTextColor="#aaa"
-                secureTextEntry
-                value={confirmPassword}
-                onChangeText={handleConfirmPasswordChange}
-                autoCapitalize="none"
-              />
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={[styles.passwordInput, confirmPasswordError ? styles.inputError : null]}
+                  placeholder="Confirm Password"
+                  placeholderTextColor="#aaa"
+                  secureTextEntry={!showConfirmPassword}
+                  value={confirmPassword}
+                  onChangeText={handleConfirmPasswordChange}
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                />
+                <TouchableOpacity 
+                  style={styles.eyeIcon}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.eyeText}>{showConfirmPassword ? "HIDE" : "SHOW"}</Text>
+                </TouchableOpacity>
+              </View>
               {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
             </View>
           )}
 
           {/* Forgot Password Link (only for login) */}
           {!isSignUp && (
-            <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotPassword}>
+            <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotPassword} disabled={isLoading}>
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
           )}
 
           {/* Submit Button */}
           <TouchableOpacity 
-            style={[styles.button, !isFormValid() ? styles.buttonDisabled : null]} 
+            style={[styles.button, (!isFormValid() || isLoading) ? styles.buttonDisabled : null]} 
             onPress={handleSubmit}
-            disabled={!isFormValid()}
+            disabled={!isFormValid() || isLoading}
           >
             <Text style={styles.buttonText}>
-              {isSignUp ? 'Sign Up' : 'Login'}
+              {isLoading ? (isSignUp ? 'Creating Account...' : 'Logging in...') : (isSignUp ? 'Sign Up' : 'Login')}
             </Text>
           </TouchableOpacity>
 
@@ -497,19 +595,24 @@ export default function LoginPage() {
               {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
             </Text>
             <TouchableOpacity onPress={() => {
-              setIsSignUp(!isSignUp);
-              // Clear all form fields when switching
-              setUsername("");
-              setEmail("");
-              setPassword("");
-              setConfirmPassword("");
-              // Clear errors when switching
-              setUsernameError("");
-              setEmailError("");
-              setPasswordError("");
-              setConfirmPasswordError("");
-            }}>
-              <Text style={styles.toggleLink}>
+              if (!isLoading) {
+                setIsSignUp(!isSignUp);
+                // Clear all form fields when switching
+                setUsername("");
+                setEmail("");
+                setPassword("");
+                setConfirmPassword("");
+                // Clear errors when switching
+                setUsernameError("");
+                setEmailError("");
+                setPasswordError("");
+                setConfirmPasswordError("");
+                // Reset password visibility when switching
+                setShowPassword(false);
+                setShowConfirmPassword(false);
+              }
+            }} disabled={isLoading}>
+              <Text style={[styles.toggleLink, isLoading ? { opacity: 0.5 } : null]}>
                 {isSignUp ? 'Login' : 'Sign Up'}
               </Text>
             </TouchableOpacity>
@@ -517,6 +620,14 @@ export default function LoginPage() {
         </View>
       </View>
     </LinearGradient>
+    
+    {/* Loading Screen Overlay */}
+    <LoadingScreen 
+      visible={isLoading}
+      message={loadingMessage}
+      submessage={loadingSubmessage}
+    />
+    </Animated.View>
   );
 }
 
@@ -603,6 +714,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     width: '100%',
+  },
+  passwordContainer: {
+    position: 'relative',
+    width: '100%',
+  },
+  passwordInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    paddingRight: 50, // Make room for eye icon
+    fontSize: 16,
+    color: '#FFFFFF',
+    width: '100%',
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 15,
+    top: 16,
+    padding: 5,
+  },
+  eyeText: {
+    fontSize: 12,
+    color: '#FF6B6B',
+    fontWeight: '600',
   },
   inputError: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)', // Light red background for errors
