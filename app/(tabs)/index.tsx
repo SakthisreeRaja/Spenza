@@ -1,16 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface User {
   username: string;
@@ -155,11 +156,12 @@ export default function HomePage() {
   );
 
   return (
-    <LinearGradient
-      colors={['#0F0F23', '#1A1A3A', '#0F0F23']}
-      style={styles.container}
-    >
-      <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeContainer} edges={['top', 'bottom']}>
+      <StatusBar style="light" backgroundColor="#0F0F23" />
+      <LinearGradient
+        colors={['#0F0F23', '#1A1A3A', '#0F0F23']}
+        style={styles.gradient}
+      >
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
@@ -258,16 +260,20 @@ export default function HomePage() {
             </View>
           </View>
         </ScrollView>
-      </SafeAreaView>
-    </LinearGradient>
+        </LinearGradient>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeContainer: {
+    flex: 1,
+    backgroundColor: '#0F0F23',
+  },
   container: {
     flex: 1,
   },
-  safeArea: {
+  gradient: {
     flex: 1,
   },
   scrollView: {
@@ -278,7 +284,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginTop: 60,
+    marginTop: 20, // Reduced since SafeAreaView handles status bar
     marginBottom: 30,
   },
   greetingContainer: {

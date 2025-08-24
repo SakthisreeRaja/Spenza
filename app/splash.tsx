@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
@@ -187,7 +189,8 @@ export default function SplashScreen() {
   }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0F0F23' }}>
+    <SafeAreaView style={styles.safeContainer} edges={['top', 'bottom']}>
+      <StatusBar style="light" backgroundColor="#0F0F23" />
       <LinearGradient
         colors={['#0F0F23', '#1A1A3A', '#0F0F23']}
         style={styles.container}
@@ -243,12 +246,16 @@ export default function SplashScreen() {
       <View style={styles.backgroundCircle1} />
       <View style={styles.backgroundCircle2} />
       <View style={styles.backgroundCircle3} />
-    </LinearGradient>
-    </View>
+      </LinearGradient>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeContainer: {
+    flex: 1,
+    backgroundColor: '#0F0F23',
+  },
   container: {
     flex: 1,
     justifyContent: 'center',

@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from "expo-router";
+import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import LoadingScreen from "../../components/LoadingScreen";
 import { authAPI, handleApiError } from "../../services/api";
 
@@ -392,11 +394,13 @@ export default function LoginPage() {
   };
 
   return (
-    <Animated.View style={[{ flex: 1 }, { opacity: pageOpacity }]}>
-      <LinearGradient
-        colors={['#0F0F23', '#1A1A3A', '#0F0F23']} // Soft gradient background
-        style={styles.container}
-      >
+    <SafeAreaView style={styles.safeContainer} edges={['top', 'bottom']}>
+      <StatusBar style="light" backgroundColor="#0F0F23" />
+      <Animated.View style={[{ flex: 1 }, { opacity: pageOpacity }]}>
+        <LinearGradient
+          colors={['#0F0F23', '#1A1A3A', '#0F0F23']} // Soft gradient background
+          style={styles.container}
+        >
       {/* Animated Background Bubbles - Behind everything */}
       <Animated.View 
         style={[
@@ -628,10 +632,15 @@ export default function LoginPage() {
       submessage={loadingSubmessage}
     />
     </Animated.View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeContainer: {
+    flex: 1,
+    backgroundColor: '#0F0F23',
+  },
   container: {
     flex: 1,
     alignItems: 'center',
