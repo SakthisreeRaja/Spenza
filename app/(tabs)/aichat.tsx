@@ -335,18 +335,17 @@ const styles = StyleSheet.create({
   backButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 8,
+    marginTop: -6,
   },
   backButtonText: {
-    fontSize: 24,
+    fontSize: 28,
     color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontWeight: '900',
     textAlign: 'center',
-    lineHeight: 44,
+    lineHeight: 28,
   },
   headerContent: {
     flexDirection: 'row',
