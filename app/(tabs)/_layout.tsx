@@ -19,21 +19,26 @@ export default function MainNavigator() {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
+        console.log('🔄 MainNavigator - Starting auth check...');
+        
         const token = await AsyncStorage.getItem('authToken');
         const hasLoggedIn = await AsyncStorage.getItem('hasLoggedIn');
         
-        console.log('🔍 Main Navigator - Checking auth:', { 
-          hasToken: !!token, 
-          hasLoggedIn: hasLoggedIn === 'true' 
+        console.log('🔍 MainNavigator - Auth values:', { 
+          token: token ? 'exists' : 'null',
+          hasLoggedIn: hasLoggedIn 
         });
 
         if (token && hasLoggedIn === 'true') {
+          console.log('✅ MainNavigator - User is authenticated - going to Home');
           setIsAuthenticated(true);
         } else {
+          console.log('❌ MainNavigator - User not authenticated - going to Login');
           setIsAuthenticated(false);
         }
       } catch (error) {
-        console.error('❌ Main Navigator - Auth check error:', error);
+        console.error('❌ MainNavigator - Auth check error:', error);
+        console.log('🔄 MainNavigator - Defaulting to Login due to error');
         setIsAuthenticated(false);
       }
     };
@@ -43,6 +48,7 @@ export default function MainNavigator() {
 
   // Show loading spinner while checking authentication
   if (isAuthenticated === null) {
+    console.log('🔄 Showing loading screen...');
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0F0F23' }}>
         <ActivityIndicator size="large" color="#FF6B6B" />
@@ -51,6 +57,10 @@ export default function MainNavigator() {
     );
   }
 
+  console.log('🎯 Navigator will render with isAuthenticated:', isAuthenticated);
+  const initialRoute = isAuthenticated ? "Home" : "Login";
+  console.log('🎯 Initial route will be:', initialRoute);
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -58,7 +68,7 @@ export default function MainNavigator() {
         contentStyle: { backgroundColor: '#0F0F23' },
         animation: 'slide_from_right',
       }}
-      initialRouteName={isAuthenticated ? "Home" : "Login"}
+      initialRouteName={initialRoute}
     >
       {/* Authentication Screens */}
       <Stack.Screen 

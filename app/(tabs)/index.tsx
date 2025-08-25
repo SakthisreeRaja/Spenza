@@ -181,7 +181,7 @@ export default function HomePage() {
           onPress: async () => {
             try {
               await AsyncStorage.multiRemove(['authToken', 'userData', 'hasLoggedIn']);
-              navigation.navigate('LoginPage' as never);
+              navigation.navigate('Login' as never);
             } catch (error) {
               console.error('Logout error:', error);
             }

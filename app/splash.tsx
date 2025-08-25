@@ -141,43 +141,26 @@ export default function SplashScreen() {
           }),
         ]).start(async () => {
           // Navigate after fade out completes
+          console.log('🔄 Splash - Checking authentication...');
           const token = await AsyncStorage.getItem('authToken');
           const hasLoggedIn = await AsyncStorage.getItem('hasLoggedIn');
           
+          console.log('🔍 Splash - Auth check:', { 
+            hasToken: !!token, 
+            hasLoggedIn: hasLoggedIn === 'true' 
+          });
+          
+          // For now, skip server validation and just use local storage
+          // TODO: Add server validation later when needed
           if (token && hasLoggedIn === 'true') {
-            // Validate token with server
-            try {
-              const response = await fetch('http://10.77.221.151:3002/api/auth/validate', {
-                method: 'GET',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
-              });
-
-              if (response.ok) {
-                const data = await response.json();
-                if (data.status === 'success') {
-                  // Token is valid and user exists on server, go to main app
-                  navigation.navigate('Main' as never);
-                  return;
-                }
-              }
-              
-              // Token is invalid or user doesn't exist on server
-              // Clear local storage and go to login
-              await AsyncStorage.multiRemove(['authToken', 'hasLoggedIn', 'userData']);
-              navigation.navigate('Main' as never);
-            } catch (error) {
-              console.error('Token validation error:', error);
-              // Network error or server down, clear storage and go to login
-              await AsyncStorage.multiRemove(['authToken', 'hasLoggedIn', 'userData']);
-              navigation.navigate('Main' as never);
-            }
+            console.log('✅ Splash - User authenticated, going to Main (Home)');
           } else {
-            // No token or hasn't logged in, go directly to login
-            navigation.navigate('Main' as never);
+            console.log('❌ Splash - User not authenticated, going to Main (Login)');
           }
+          
+          // Always navigate to Main - let MainNavigator handle auth routing
+          console.log('🎯 Splash - Navigating to Main...');
+          navigation.navigate('Main' as never);
         });
       } catch (error) {
         console.error('Auth check error:', error);
