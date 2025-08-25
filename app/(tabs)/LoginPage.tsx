@@ -141,6 +141,7 @@ export default function LoginPage() {
       try {
         if (isSignUp) {
           console.log('🔄 Starting registration process...');
+          console.log('📋 Registration data:', { username, email: email.substring(0,3) + '***' });
           
           // Show loading for signup process
           setIsLoading(true);
@@ -170,6 +171,8 @@ export default function LoginPage() {
             await AsyncStorage.setItem('userData', JSON.stringify(response.data?.user || {}));
             await AsyncStorage.setItem('hasLoggedIn', 'true');
             
+            console.log('💾 Auth data saved successfully');
+            
             // Wait a moment to show success message
             setTimeout(() => {
               console.log('🔄 Navigating to main app...');
@@ -181,12 +184,18 @@ export default function LoginPage() {
                 useNativeDriver: true,
               }).start(() => {
                 // Navigate directly to main app after successful signup
+                console.log('🎯 Actually navigating to Home now...');
                 navigation.navigate("Home" as never);
               });
             }, 1500);
+          } else {
+            console.log('❌ Registration failed:', response.message || 'Unknown error');
+            setIsLoading(false);
+            setEmailError('Registration failed. Please try again.');
           }
         } else {
           console.log('🔄 Starting login process...');
+          console.log('📋 Login data:', { email: email.substring(0,3) + '***' });
           
           // Show loading for login process
           setIsLoading(true);
@@ -203,10 +212,26 @@ export default function LoginPage() {
 
           if (response.status === 'success') {
             console.log('✅ Login successful, saving auth data...');
+            
+            // Critical: Clear any old profile images before login
+            const oldUserData = await AsyncStorage.getItem('userData');
+            if (oldUserData) {
+              try {
+                const oldUser = JSON.parse(oldUserData);
+                if (oldUser.email !== response.data?.user?.email) {
+                  console.log('🧹 Different user logging in - clearing old profile data');
+                }
+              } catch (parseError) {
+                console.log('🧹 Invalid old user data - clearing');
+              }
+            }
+            
             // Save auth data
             await AsyncStorage.setItem('authToken', response.data?.token || '');
             await AsyncStorage.setItem('userData', JSON.stringify(response.data?.user || {}));
             await AsyncStorage.setItem('hasLoggedIn', 'true');
+            
+            console.log('💾 Login auth data saved successfully');
             
             // Wait a moment to show loading
             setTimeout(() => {
@@ -218,9 +243,14 @@ export default function LoginPage() {
                 duration: 200,
                 useNativeDriver: true,
               }).start(() => {
+                console.log('🎯 Actually navigating to Home now...');
                 navigation.navigate("Home" as never);
               });
             }, 1000);
+          } else {
+            console.log('❌ Login failed:', response.message || 'Unknown error');
+            setIsLoading(false);
+            setPasswordError('Login failed. Please check your credentials.');
           }
           // Note: Error responses are handled in the catch block
         }
@@ -228,28 +258,44 @@ export default function LoginPage() {
         // Hide loading on error
         setIsLoading(false);
         
+        console.log('🚨 Authentication error caught:', error);
+        console.log('🚨 Error type:', typeof error);
+        console.log('🚨 Error message:', (error as any)?.message || 'Unknown');
+        
         // Removed console.error to prevent "Auth error" message display
         const errorMessage = handleApiError(error);
+        console.log('🚨 Processed error message:', errorMessage);
         
         if (!isSignUp) {
           // Handle different login error scenarios
-          if (errorMessage.includes('User not found') || errorMessage.includes('not found') || errorMessage.includes('No user found')) {
-            setEmailError("Account not found. Please sign up first or check your email/username.");
-          } else if (errorMessage.includes('Invalid password') || errorMessage.includes('password') || errorMessage.includes('incorrect')) {
+          if (errorMessage.includes('User not found') || errorMessage.includes('not found') || errorMessage.includes('No user found') || errorMessage.includes('does not exist')) {
+            setEmailError("No account found with this email/username. Please sign up first.");
+          } else if (errorMessage.includes('Invalid password') || errorMessage.includes('password') || errorMessage.includes('incorrect') || errorMessage.includes('wrong password')) {
             setPasswordError("Incorrect password. Please try again.");
           } else if (errorMessage.includes('Invalid credentials') || errorMessage.includes('invalid') || errorMessage.includes('credential')) {
-            setPasswordError("Invalid credentials. Please check your details.");
+            setPasswordError("Invalid login credentials. Please check your details.");
+          } else if (errorMessage.includes('network') || errorMessage.includes('connection') || errorMessage.includes('fetch')) {
+            setPasswordError("Connection error. Please check your internet and try again.");
           } else {
-            // For other login errors, show generic message
-            setPasswordError("Login failed. Please check your credentials.");
+            // For other login errors, show user-friendly message
+            setEmailError("Account not found. Please check your email/username or sign up.");
           }
         } else {
-          // Handle signup errors
-          if (errorMessage.includes('already exists') || errorMessage.includes('already registered')) {
+          // Handle signup errors properly
+          if (errorMessage.includes('already exists') || errorMessage.includes('already registered') || errorMessage.includes('User already exists')) {
             setEmailError("An account with this email already exists. Please login instead.");
+          } else if (errorMessage.includes('username') && errorMessage.includes('taken')) {
+            setUsernameError("This username is already taken. Please choose another one.");
+          } else if (errorMessage.includes('email') && (errorMessage.includes('invalid') || errorMessage.includes('format'))) {
+            setEmailError("Please enter a valid email address.");
+          } else if (errorMessage.includes('password') && errorMessage.includes('weak')) {
+            setPasswordError("Password is too weak. Please use a stronger password.");
+          } else if (errorMessage.includes('network') || errorMessage.includes('connection') || errorMessage.includes('fetch')) {
+            setPasswordError("Connection error. Please check your internet and try again.");
           } else {
-            // For other signup errors, log silently - no auth system messages
-            console.log('🔕 Signup error (silenced):', errorMessage);
+            // Show actual signup errors to the user
+            setEmailError(`Signup failed: ${errorMessage}`);
+            console.error('🚨 Signup error:', errorMessage);
           }
         }
       }

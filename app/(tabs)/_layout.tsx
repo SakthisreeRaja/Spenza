@@ -23,17 +23,24 @@ export default function MainNavigator() {
         
         const token = await AsyncStorage.getItem('authToken');
         const hasLoggedIn = await AsyncStorage.getItem('hasLoggedIn');
+        const userData = await AsyncStorage.getItem('userData');
         
         console.log('🔍 MainNavigator - Auth values:', { 
           token: token ? 'exists' : 'null',
-          hasLoggedIn: hasLoggedIn 
+          hasLoggedIn: hasLoggedIn,
+          hasUserData: !!userData
         });
 
-        if (token && hasLoggedIn === 'true') {
+        if (token && hasLoggedIn === 'true' && userData) {
           console.log('✅ MainNavigator - User is authenticated - going to Home');
           setIsAuthenticated(true);
         } else {
           console.log('❌ MainNavigator - User not authenticated - going to Login');
+          // Clear any orphaned profile images when not authenticated
+          if (!token || hasLoggedIn !== 'true') {
+            console.log('🧹 MainNavigator - Clearing any orphaned data...');
+            await AsyncStorage.multiRemove(['authToken', 'userData', 'hasLoggedIn']);
+          }
           setIsAuthenticated(false);
         }
       } catch (error) {

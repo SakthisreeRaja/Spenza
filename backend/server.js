@@ -23,7 +23,11 @@ app.use(cors({
     'http://localhost:8081', 
     'exp://192.168.1.100:8081',
     'exp://10.77.221.151:8081',
-    'http://10.77.221.151:8081'
+    'http://10.77.221.151:8081',
+    'exp://172.16.13.183:8081',
+    'http://172.16.13.183:8081',
+    'exp://192.168.137.1:8081',
+    'http://192.168.137.1:8081'
   ],
   credentials: true
 }));
@@ -274,7 +278,7 @@ const PORT = process.env.PORT || 3002;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Spenza Backend Server running on port ${PORT}`);
   console.log(`🌐 Health check: http://localhost:${PORT}/health`);
-  console.log(`🌐 Network access: http://10.77.221.151:${PORT}/health`);
+  console.log(`🌐 Network access: http://172.16.13.183:${PORT}/health`);
   console.log(`📱 No MongoDB required - using in-memory storage`);
 });
 

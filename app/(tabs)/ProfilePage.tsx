@@ -5,13 +5,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -47,16 +47,28 @@ export default function ProfilePage() {
         const user = JSON.parse(userData);
         setUser(user);
         
-        // Load profile image specific to this user
+        // Load profile image specific to this user ONLY
         const userProfileKey = `profileImage_${user.email}`;
         const savedProfileImage = await AsyncStorage.getItem(userProfileKey);
         
         if (savedProfileImage) {
+          console.log(`✅ ProfilePage - Loading image for user: ${user.email}`);
           setProfileImage(savedProfileImage);
+        } else {
+          console.log(`🔄 ProfilePage - No image found for user: ${user.email}`);
+          setProfileImage(null);
         }
+      } else {
+        // Critical: Clear ALL user-related state if no user data
+        console.log('🧹 ProfilePage - No user data found - clearing all state');
+        setUser(null);
+        setProfileImage(null);
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error('ProfilePage - Error loading user data:', error);
+      // Critical: Clear state on any error
+      setUser(null);
+      setProfileImage(null);
     }
   };
 

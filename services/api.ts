@@ -1,7 +1,7 @@
 // API Configuration
 // Use your computer's IP address instead of localhost for mobile testing
 const API_BASE_URL = __DEV__ 
-  ? 'http://10.77.221.151:3002/api'  // Use the same IP shown in Expo QR code
+  ? 'http://172.16.13.183:3002/api'  // Updated to current IP address
   : 'https://your-production-api.com/api';
 
 // API Response Types
@@ -78,6 +78,8 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     
+    console.log(`🌐 API Request: ${options.method || 'GET'} ${url}`);
+    
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
@@ -89,19 +91,25 @@ class ApiClient {
     }
 
     try {
+      console.log('📡 Making fetch request...');
       const response = await fetch(url, {
         ...options,
         headers,
       });
 
+      console.log(`📡 Response status: ${response.status}`);
       const data = await response.json();
+      console.log('📡 Response data:', data);
 
       if (!response.ok) {
+        console.log(`❌ Response not OK: ${response.status}`);
         throw new Error(data.message || `HTTP error! status: ${response.status}`);
       }
 
+      console.log('✅ API Request successful');
       return data;
     } catch (error) {
+      console.log('❌ API Request failed:', error);
       // Removed console.error to prevent "API request failed" message display
       throw error;
     }

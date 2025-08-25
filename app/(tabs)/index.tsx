@@ -146,13 +146,22 @@ export default function HomePage() {
         const user = JSON.parse(userData);
         setUser(user);
         
-        // Load profile image specific to this user
+        // Load profile image specific to this user ONLY
         const userProfileKey = `profileImage_${user.email}`;
         const savedProfileImage = await AsyncStorage.getItem(userProfileKey);
         
         if (savedProfileImage) {
+          console.log(`✅ Loading profile image for user: ${user.email}`);
           setProfileImage(savedProfileImage);
+        } else {
+          console.log(`🔄 No profile image found for user: ${user.email}`);
+          setProfileImage(null);
         }
+      } else {
+        // Critical: Clear ALL user-related state if no user data
+        console.log('🧹 No user data found - clearing all user state');
+        setUser(null);
+        setProfileImage(null);
       }
       
       // Load sample data for now with better categorization
@@ -166,6 +175,9 @@ export default function HomePage() {
       ]);
     } catch (error) {
       console.error('Error loading user data:', error);
+      // Critical: Clear state on any error
+      setUser(null);
+      setProfileImage(null);
     }
   };
 
