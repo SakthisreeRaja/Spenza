@@ -17,6 +17,9 @@ let categories = [
 ];
 let budgets = [];
 
+// Server session ID to detect restarts
+const SERVER_SESSION_ID = Date.now().toString();
+
 // Middleware
 app.use(cors({
   origin: [
@@ -63,7 +66,8 @@ app.get('/health', (req, res) => {
     status: 'success',
     message: 'Spenza API is running',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    sessionId: SERVER_SESSION_ID
   });
 });
 

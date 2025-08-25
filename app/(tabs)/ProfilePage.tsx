@@ -165,9 +165,18 @@ export default function ProfilePage() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await AsyncStorage.removeItem('authToken');
-              await AsyncStorage.removeItem('hasLoggedIn');
-              (navigation as any).navigate('Login');
+              // Use the global logout function
+              if ((global as any).appLogout) {
+                await (global as any).appLogout();
+              } else {
+                // Fallback: clear storage and hope MainNavigator detects it
+                await AsyncStorage.multiRemove([
+                  'authToken', 
+                  'hasLoggedIn', 
+                  'userData'
+                ]);
+                console.log('✅ Fallback logout completed');
+              }
             } catch (error) {
               console.error('Error during logout:', error);
             }

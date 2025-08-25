@@ -162,6 +162,16 @@ export default function LoginPage() {
           if (response.status === 'success') {
             console.log('✅ Registration successful, saving auth data...');
             
+            // Check if this is a fresh signup (server restart scenario)
+            // If user is signing up but has old profile data, it means server was restarted
+            const existingProfileKey = `profileImage_${email}`;
+            const oldProfileImage = await AsyncStorage.getItem(existingProfileKey);
+            
+            if (oldProfileImage) {
+              console.log('🧹 Server restart detected - clearing old profile image for fresh signup');
+              await AsyncStorage.removeItem(existingProfileKey);
+            }
+            
             // Show success message
             setLoadingMessage('Sign up successful!');
             setLoadingSubmessage('Logging you in...');
@@ -183,9 +193,8 @@ export default function LoginPage() {
                 duration: 200,
                 useNativeDriver: true,
               }).start(() => {
-                // Navigate directly to main app after successful signup
-                console.log('🎯 Actually navigating to Home now...');
-                navigation.navigate("Home" as never);
+                // Authentication state is already updated, MainNavigator will handle the navigation
+                console.log('✅ Registration animation completed, MainNavigator will show Home');
               });
             }, 1500);
           } else {
@@ -243,8 +252,8 @@ export default function LoginPage() {
                 duration: 200,
                 useNativeDriver: true,
               }).start(() => {
-                console.log('🎯 Actually navigating to Home now...');
-                navigation.navigate("Home" as never);
+                // Authentication state is already updated, MainNavigator will handle the navigation
+                console.log('✅ Login animation completed, MainNavigator will show Home');
               });
             }, 1000);
           } else {
