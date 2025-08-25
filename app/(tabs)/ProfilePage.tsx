@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  BackHandler,
   Image,
   ScrollView,
   StyleSheet,
@@ -38,6 +39,19 @@ export default function ProfilePage() {
   useEffect(() => {
     loadUserData();
   }, []);
+
+  // Handle hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      // Use goBack for proper reverse animation
+      navigation.goBack();
+      return true; // Prevent default behavior
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, [navigation]);
 
   const loadUserData = async () => {
     try {
@@ -281,7 +295,14 @@ export default function ProfilePage() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => (navigation as any).navigate('Home')}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => {
+              // Use goBack for proper reverse animation
+              navigation.goBack();
+            }}
+            activeOpacity={0.7}
+          >
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>

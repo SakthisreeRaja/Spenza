@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { CardStyleInterpolators, createStackNavigator } from '@react-navigation/stack';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, AppState, Text, View } from 'react-native';
 
@@ -9,7 +9,7 @@ import HomePage from './index';
 import LoginPage from './LoginPage';
 import ProfilePage from './ProfilePage';
 
-const Stack = createNativeStackNavigator();
+const Stack = createStackNavigator();
 
 export default function MainNavigator() {
   const navigation = useNavigation();
@@ -26,7 +26,6 @@ export default function MainNavigator() {
         'userData'
       ]);
       
-      // Note: We intentionally keep profile images so users don't lose them when logging back in
       console.log('✅ Logout completed - keeping profile images for future logins');
       setIsAuthenticated(false);
     } catch (error) {
@@ -50,7 +49,6 @@ export default function MainNavigator() {
       
       let shouldClearAuth = false;
       
-      // First, check if server has been restarted by comparing session IDs
       try {
         console.log('🔍 Checking server health...');
         const response = await fetch('http://172.16.13.183:3002/health');
@@ -66,7 +64,6 @@ export default function MainNavigator() {
           console.log('🚨 Server restart detected - will clear all cached data');
           shouldClearAuth = true;
           
-          // Server has restarted, clear all user data including profile images
           const keys = await AsyncStorage.getAllKeys();
           const userDataKeys = keys.filter(key => 
             key.startsWith('profileImage_') || 
@@ -78,14 +75,12 @@ export default function MainNavigator() {
           await AsyncStorage.multiRemove(userDataKeys);
         }
         
-        // Save current session ID
         await AsyncStorage.setItem('serverSessionId', currentSessionId);
       } catch (healthError) {
         console.log('⚠️ Could not check server health:', healthError);
         console.log('⚠️ Proceeding with normal auth check');
       }
       
-      // If server restarted, force logout
       if (shouldClearAuth) {
         console.log('❌ Server restart - forcing logout');
         setIsAuthenticated(false);
@@ -115,12 +110,9 @@ export default function MainNavigator() {
     }
   };
 
-  // Check authentication state when component mounts and when app comes to foreground
   useEffect(() => {
-    // Initial auth check
     checkAuthStatus();
 
-    // Set up AppState listener to check auth when app comes to foreground
     const handleAppStateChange = (nextAppState: string) => {
       if (nextAppState === 'active') {
         console.log('📱 App became active - rechecking auth');
@@ -130,7 +122,6 @@ export default function MainNavigator() {
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
 
-    // Also set up a periodic check for auth changes (every 2 seconds when app is active)
     const authCheckInterval = setInterval(() => {
       if (AppState.currentState === 'active') {
         checkAuthStatus();
@@ -159,6 +150,22 @@ export default function MainNavigator() {
       key={isAuthenticated ? 'authenticated' : 'unauthenticated'}
       screenOptions={{
         headerShown: false,
+        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS, // 👈 smooth slide transition
+        gestureEnabled: true,
+        transitionSpec: {
+          open: {
+            animation: 'timing',
+            config: {
+              duration: 400,
+            },
+          },
+          close: {
+            animation: 'timing',
+            config: {
+              duration: 400,
+            },
+          },
+        },
       }}
     >
       {isAuthenticated ? (

@@ -33,6 +33,7 @@ export default function RootLayout() {
               headerShown: false,
               contentStyle: { backgroundColor: '#0F0F23' },
               animation: 'fade',
+              animationDuration: 300,
             }}
             initialRouteName="Splash"
           >

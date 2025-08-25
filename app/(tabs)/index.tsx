@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
+  BackHandler,
   Image,
   ScrollView,
   StyleSheet,
@@ -107,6 +108,37 @@ export default function HomePage() {
       clearInterval(arrowInterval);
     };
   }, [bounceAnim, arrowMoveAnim, navigation]);
+
+  // Handle hardware back button - show exit confirmation
+  useEffect(() => {
+    const backAction = () => {
+      // Only show exit dialog if we're on the Home screen (top level)
+      Alert.alert(
+        'Exit Spenza',
+        'Are you sure you want to exit the app?',
+        [
+          {
+            text: 'Cancel',
+            onPress: () => null,
+            style: 'cancel',
+          },
+          {
+            text: 'Exit',
+            onPress: () => BackHandler.exitApp(),
+            style: 'destructive',
+          },
+        ],
+        {
+          cancelable: false,
+        }
+      );
+      return true; // Prevent default behavior
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, []);
 
   const getTimeBasedGreeting = () => {
     const hour = currentTime.getHours();

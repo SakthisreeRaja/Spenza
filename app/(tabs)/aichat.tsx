@@ -50,7 +50,7 @@ export default function AIChatPage() {
 
   // Handle navigation back with proper direction
   const handleGoBack = () => {
-    (navigation as any).navigate('Home');
+    navigation.goBack();
   };
 
   useEffect(() => {

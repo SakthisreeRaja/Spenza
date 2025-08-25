@@ -276,16 +276,17 @@ const styles = StyleSheet.create({
   },
   taglineContainer: {
     alignItems: 'center',
-    marginBottom: 80,
+    marginBottom: 120, // Increased from 80 to push it higher up
+    marginTop: -20, // Added negative margin to move it closer to logo
   },
   tagline: {
-    fontSize: 20, // Increased from 18
-    color: '#E0E0E0', // Brighter color from #B0B0B0
+    fontSize: 20,
+    color: '#E0E0E0',
     textAlign: 'center',
     fontStyle: 'italic',
     marginBottom: 8,
-    fontWeight: '500', // Added weight for better visibility
-    textShadowColor: 'rgba(224, 224, 224, 0.5)', // Added text shadow
+    fontWeight: '500',
+    textShadowColor: 'rgba(224, 224, 224, 0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
@@ -295,32 +296,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '300',
   },
-  // Background decorative elements
+  // Background decorative elements - more subtle and professional
   backgroundCircle1: {
     position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
-    top: -50,
-    right: -50,
+    width: 160, // Reduced size
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(255, 107, 107, 0.06)', // More subtle opacity
+    top: -30,
+    right: -40,
   },
   backgroundCircle2: {
     position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: 'rgba(255, 195, 0, 0.08)',
-    bottom: -30,
-    left: -40,
+    width: 120, // Reduced size
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255, 195, 0, 0.05)', // More subtle
+    bottom: -20,
+    left: -30,
   },
   backgroundCircle3: {
     position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(138, 43, 226, 0.08)',
-    top: height * 0.3,
-    left: -20,
+    width: 100, // Reduced size
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(138, 43, 226, 0.05)', // More subtle
+    top: height * 0.25, // Adjusted position
+    left: -15,
   },
 });

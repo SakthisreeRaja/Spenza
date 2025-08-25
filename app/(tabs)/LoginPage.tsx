@@ -3,7 +3,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Animated, BackHandler, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LoadingScreen from "../../components/LoadingScreen";
 import { authAPI, handleApiError } from "../../services/api";
@@ -419,6 +419,36 @@ export default function LoginPage() {
     return () => {
       clearTimeout(bounceTimer);
     };
+  }, []);
+
+  // Handle hardware back button - show exit confirmation
+  useEffect(() => {
+    const backAction = () => {
+      Alert.alert(
+        'Exit Spenza',
+        'Are you sure you want to exit the app?',
+        [
+          {
+            text: 'Cancel',
+            onPress: () => null,
+            style: 'cancel',
+          },
+          {
+            text: 'Exit',
+            onPress: () => BackHandler.exitApp(),
+            style: 'destructive',
+          },
+        ],
+        {
+          cancelable: false,
+        }
+      );
+      return true; // Prevent default behavior
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
   }, []);
 
   // Clear form fields when navigating back to login page (e.g., after logout)
